@@ -103,6 +103,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     final imageUrl = _profile?['is_profile_image'];
     ImageProvider<Object>? imageProvider;
 
@@ -114,35 +116,143 @@ class _ProfileScreenState extends State<ProfileScreen> {
       imageProvider = null;
     }
 
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 60,
-          backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
-          backgroundImage: imageProvider,
-          child:
-              imageProvider == null ? const Icon(Icons.person, size: 60) : null,
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Card(
+      color: colorScheme.primary.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TextButton.icon(
-            //   onPressed: _pickImage,
-            //   icon: const Icon(Icons.photo_camera),
-            //   label: const Text('Change'),
-            // ),
-            // if (imageUrl != null && imageUrl.toString().isNotEmpty)
-            //   TextButton.icon(
-            //     onPressed: _deleteImage,
-            //     icon: const Icon(Icons.delete, color: Colors.red),
-            //     label: const Text('Remove'),
-            //   ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 200,
+                height: 250,
+                color: colorScheme.primary.withOpacity(0.2),
+                child: imageProvider != null
+                    ? Image(
+                        image: imageProvider,
+                        width: 200,
+                        height: 250,
+                        fit: BoxFit.cover,
+                      )
+                    : Icon(Icons.person,
+                        size: 60, color: colorScheme.onSurface),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _profile?['name'] ?? '-',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Name
+                  _buildDetailItem(
+                      "Register No", _profile?['reg_no'] ?? '-', colorScheme),
+                  const SizedBox(height: 8),
+
+                  _buildDetailItem(
+                      "Mobile", _profile?['mobile'] ?? '-', colorScheme),
+                  const SizedBox(height: 8),
+
+                  _buildDetailItem(
+                      "Email", _profile?['email'] ?? '-', colorScheme),
+                  const SizedBox(height: 8),
+
+                  _buildDetailItem(
+                      "State", _profile?['is_state_name'] ?? '-', colorScheme),
+                  const SizedBox(height: 8),
+
+                  _buildDetailItem("District",
+                      _profile?['is_district_name'] ?? '-', colorScheme),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
       ],
     );
   }
+
+  // Widget _buildProfileHeader(ThemeData theme) {
+  //   final imageUrl = _profile?['is_profile_image'];
+  //   ImageProvider<Object>? imageProvider;
+
+  //   if (_pickedImage != null) {
+  //     imageProvider = FileImage(_pickedImage!);
+  //   } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
+  //     imageProvider = NetworkImage(imageUrl);
+  //   } else {
+  //     imageProvider = null;
+  //   }
+
+  //   return Column(
+  //     children: [
+  //       CircleAvatar(
+  //         radius: 60,
+  //         backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
+  //         backgroundImage: imageProvider,
+  //         child:
+  //             imageProvider == null ? const Icon(Icons.person, size: 60) : null,
+  //       ),
+  //       const SizedBox(height: 10),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           // TextButton.icon(
+  //           //   onPressed: _pickImage,
+  //           //   icon: const Icon(Icons.photo_camera),
+  //           //   label: const Text('Change'),
+  //           // ),
+  //           // if (imageUrl != null && imageUrl.toString().isNotEmpty)
+  //           //   TextButton.icon(
+  //           //     onPressed: _deleteImage,
+  //           //     icon: const Icon(Icons.delete, color: Colors.red),
+  //           //     label: const Text('Remove'),
+  //           //   ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildReadOnlyInfo() {
     return Column(
@@ -159,19 +269,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _infoTile(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          SizedBox(
-              width: 130,
-              child: Text(label,
-                  style: const TextStyle(fontWeight: FontWeight.bold))),
-          Expanded(
-              child:
-                  Text(value, style: const TextStyle(color: Color.fromARGB(221, 168, 125, 125)))),
-        ],
-      ),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
