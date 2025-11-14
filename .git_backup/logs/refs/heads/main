@@ -1,0 +1,23 @@
+0000000000000000000000000000000000000000 354e99c656f7bce99794e8ff596d671a63a2f7f6 michealraj-techie <michealraj.techie@gmail.com> 1761131930 +0530	commit (initial): initial create
+354e99c656f7bce99794e8ff596d671a63a2f7f6 eac68349bf7e249f1914097aefef668253b8fdfb michealraj-techie <michealraj.techie@gmail.com> 1761139027 +0530	commit: dashboard and theme
+eac68349bf7e249f1914097aefef668253b8fdfb 5e16108ad7874670f1e96e7e45adf3cc47b20283 michealraj-techie <michealraj.techie@gmail.com> 1761149593 +0530	commit: new nav
+5e16108ad7874670f1e96e7e45adf3cc47b20283 679118e8bdfabe510b80c7fb71c3d29ce02db07b michealraj-techie <michealraj.techie@gmail.com> 1761226187 +0530	commit: login ui
+679118e8bdfabe510b80c7fb71c3d29ce02db07b 6d17989d6bc798c5e5d85bd145b1cf16f9c719d0 michealraj-techie <michealraj.techie@gmail.com> 1761241137 +0530	commit: switch user and fcm id login
+6d17989d6bc798c5e5d85bd145b1cf16f9c719d0 aeb322157ed196ed6f2d7ac87aad5c16c4179b0f michealraj-techie <michealraj.techie@gmail.com> 1761244312 +0530	commit: app change for the notofication
+aeb322157ed196ed6f2d7ac87aad5c16c4179b0f 94060a1730f79891f60c304212c8f43e3d8a05bb michealraj-techie <michealraj.techie@gmail.com> 1761756494 +0530	commit: notifications
+94060a1730f79891f60c304212c8f43e3d8a05bb 22d07e448764f69f54cdaad611852133f145459c michealraj-techie <michealraj.techie@gmail.com> 1761846605 +0530	commit: notification image and youtube
+22d07e448764f69f54cdaad611852133f145459c 2542b2cb02612af9c8c8312bdc9be2fab4153138 michealraj-techie <michealraj.techie@gmail.com> 1761891438 +0530	commit: file download
+2542b2cb02612af9c8c8312bdc9be2fab4153138 1be373c3024ce636716988a63eee55799d920c51 michealraj-techie <michealraj.techie@gmail.com> 1761926252 +0530	commit: attendance ui
+1be373c3024ce636716988a63eee55799d920c51 ee2c773380d31880cab3dc95fb753410686996d5 michealraj-techie <michealraj.techie@gmail.com> 1761926259 +0530	commit: ui
+ee2c773380d31880cab3dc95fb753410686996d5 72a2c73e12c95fd8d171ab8382dd11b7bd9454c3 michealraj-techie <michealraj.techie@gmail.com> 1761978972 +0530	commit: common change UI
+72a2c73e12c95fd8d171ab8382dd11b7bd9454c3 7714556cf3208c5ef2aadf32b3101e8b9323b9c6 michealraj-techie <michealraj.techie@gmail.com> 1762174452 +0530	commit: attendance
+7714556cf3208c5ef2aadf32b3101e8b9323b9c6 e25735d6ff8f41cc0a44aedd21f54db26803a295 michealraj-techie <michealraj.techie@gmail.com> 1762270915 +0530	commit: leave and attendance bug, homework
+e25735d6ff8f41cc0a44aedd21f54db26803a295 fd929669dc238e0dfdea0cf251d810f9d0c1f4dc michealraj-techie <michealraj.techie@gmail.com> 1762307579 +0530	commit: ;eave
+fd929669dc238e0dfdea0cf251d810f9d0c1f4dc d942771dc51043137d6465075021bb9836f146b2 michealraj-techie <michealraj.techie@gmail.com> 1762309153 +0530	commit: read aloud
+d942771dc51043137d6465075021bb9836f146b2 68b56b6a689fb3dc6e67aa740fe1111e16b57994 michealraj-techie <michealraj.techie@gmail.com> 1762413866 +0530	commit: forgot password save
+68b56b6a689fb3dc6e67aa740fe1111e16b57994 d87d68af1f6ca5c1cddcd2eee66f5600952c4ee3 michealraj-techie <michealraj.techie@gmail.com> 1763050438 +0530	commit: 13-11-2025
+d87d68af1f6ca5c1cddcd2eee66f5600952c4ee3 b4ff7940425c7cebaaac0c7b734d3f401dc80690 michealraj-techie <michealraj.techie@gmail.com> 1763052514 +0530	commit: 13-11-2025 10:18PM
+b4ff7940425c7cebaaac0c7b734d3f401dc80690 a38bb5a1eb8b9f3e44370a29835acdc10fb7cc2e michealraj-techie <michealraj.techie@gmail.com> 1763054404 +0530	commit: notification screen
+a38bb5a1eb8b9f3e44370a29835acdc10fb7cc2e 0a4107600f2c5da4ff2e9bc55ce8d72946526c4e michealraj-techie <michealraj.techie@gmail.com> 1763134713 +0530	commit: tamil translation
+0a4107600f2c5da4ff2e9bc55ce8d72946526c4e a38bb5a1eb8b9f3e44370a29835acdc10fb7cc2e michealraj-techie <michealraj.techie@gmail.com> 1763135336 +0530	reset: moving to HEAD~1
+a38bb5a1eb8b9f3e44370a29835acdc10fb7cc2e 00b5a59396db2479192df3f5dff9ab4d2f0761c3 michealraj-techie <michealraj.techie@gmail.com> 1763135373 +0530	commit: Clean build artifacts from repo
