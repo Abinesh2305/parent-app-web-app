@@ -6,6 +6,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/leave_service.dart';
+import 'package:school_dashboard/l10n/app_localizations.dart';
 
 class LeaveScreen extends StatefulWidget {
   const LeaveScreen({super.key});
@@ -20,7 +21,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
   final _audioRecorder = AudioRecorder();
   final _audioPlayer = AudioPlayer();
 
-  String _leaveType = 'FULL DAY';
+  String _leaveType = 'FULL DAY'; // unchanged
   DateTime _fromDate = DateTime.now();
   DateTime _toDate = DateTime.now();
 
@@ -39,7 +40,6 @@ class _LeaveScreenState extends State<LeaveScreen> {
     settingsBox = Hive.box('settings');
     _loadUnapprovedLeaves();
 
-    // Listen for user switch and reload leaves
     settingsBox.watch(key: 'user').listen((event) async {
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) _loadUnapprovedLeaves();
@@ -60,13 +60,12 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
   Future<void> _loadUnapprovedLeaves() async {
     setState(() => _loading = true);
+
     final box = Hive.box('settings');
     final user = box.get('user');
     final token = box.get('token');
 
-    // Safety: ensure data ready after user switch
     if (user == null || token == null) {
-      print("User or token not ready yet. Retrying...");
       await Future.delayed(const Duration(milliseconds: 400));
       if (mounted) return _loadUnapprovedLeaves();
     }
@@ -77,10 +76,13 @@ class _LeaveScreenState extends State<LeaveScreen> {
     } else {
       setState(() => _pendingLeaves = []);
     }
+
     setState(() => _loading = false);
   }
 
   Future<void> _applyLeave() async {
+    final t = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
 
@@ -98,9 +100,9 @@ class _LeaveScreenState extends State<LeaveScreen> {
     );
 
     setState(() => _loading = false);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(res?['message'] ?? 'Something went wrong')),
-    );
+        SnackBar(content: Text(res?['message'] ?? t.somethingWentWrong)));
 
     if (res?['status'] == 1) {
       _reasonController.clear();
@@ -111,16 +113,21 @@ class _LeaveScreenState extends State<LeaveScreen> {
   }
 
   Future<void> _cancelLeave(int id) async {
+    final t = AppLocalizations.of(context)!;
+
     setState(() => _loading = true);
     final res = await LeaveService().cancelLeave(id);
     setState(() => _loading = false);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(res?['message'] ?? 'Error cancelling leave')),
-    );
+        SnackBar(content: Text(res?['message'] ?? t.errorCancellingLeave)));
+
     if (res?['status'] == 1) _loadUnapprovedLeaves();
   }
 
   Future<void> _toggleRecording() async {
+    final t = AppLocalizations.of(context)!;
+
     if (_recording) {
       final path = await _audioRecorder.stop();
       setState(() {
@@ -133,14 +140,13 @@ class _LeaveScreenState extends State<LeaveScreen> {
         final dir = await getTemporaryDirectory();
         final filePath =
             '${dir.path}/leave_${DateTime.now().millisecondsSinceEpoch}.mp3';
+
         await _audioRecorder.start(const RecordConfig(), path: filePath);
 
         _audioRecorder
             .onAmplitudeChanged(const Duration(milliseconds: 150))
             .listen((amp) {
-          setState(() {
-            _currentAmplitude = amp.current;
-          });
+          setState(() => _currentAmplitude = amp.current);
         });
 
         setState(() {
@@ -149,14 +155,14 @@ class _LeaveScreenState extends State<LeaveScreen> {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Microphone permission denied')),
-        );
+            SnackBar(content: Text(t.microphonePermissionDenied)));
       }
     }
   }
 
   Future<void> _togglePlayback() async {
     if (_audioPath == null) return;
+
     if (_playing) {
       await _audioPlayer.pause();
       setState(() => _playing = false);
@@ -168,6 +174,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
   Future<void> _removeAudio() async {
     if (_playing) await _audioPlayer.stop();
+
     setState(() {
       _audioPath = null;
       _playing = false;
@@ -176,10 +183,11 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Leave Management')),
+      appBar: AppBar(title: Text(t.leaveManagement)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -190,32 +198,34 @@ class _LeaveScreenState extends State<LeaveScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildApplyForm(colorScheme),
+                    _buildApplyForm(colorScheme, t),
                     const SizedBox(height: 24),
-                    const Text('Pending Leaves',
-                        style: TextStyle(
+                    Text(t.pendingLeaves,
+                        style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     if (_pendingLeaves.isEmpty)
-                      const Center(child: Text('No pending leaves')),
-                    ..._pendingLeaves.map((l) => Card(
-                          child: ListTile(
-                            title: Text(
-                              "From: ${l['leave_date_format'] ?? l['leave_date']}"
-                              "${l['leave_enddate_format'] != null ? '\nTo: ${l['leave_enddate_format']}' : ''}",
-                            ),
-                            subtitle: Text(
-                              "${l['leave_reason'] ?? ''}\nType: ${l['leave_type']}",
-                            ),
-                            trailing: TextButton(
-                              onPressed: () => _cancelLeave(l['id']),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(color: Colors.red),
-                              ),
+                      Center(child: Text(t.noPendingLeaves)),
+                    ..._pendingLeaves.map(
+                      (l) => Card(
+                        child: ListTile(
+                          title: Text(
+                            "${t.from}: ${l['leave_date_format'] ?? l['leave_date']}"
+                            "${l['leave_enddate_format'] != null ? '\n${t.to}: ${l['leave_enddate_format']}' : ''}",
+                          ),
+                          subtitle: Text(
+                            "${l['leave_reason'] ?? ''}\n${t.leaveType}: ${l['leave_type']}",
+                          ),
+                          trailing: TextButton(
+                            onPressed: () => _cancelLeave(l['id']),
+                            child: Text(
+                              t.cancelLeave,
+                              style: const TextStyle(color: Colors.red),
                             ),
                           ),
-                        )),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -223,7 +233,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
     );
   }
 
-  Widget _buildApplyForm(ColorScheme colorScheme) {
+  Widget _buildApplyForm(ColorScheme colorScheme, AppLocalizations t) {
     return Form(
       key: _formKey,
       child: Card(
@@ -234,32 +244,28 @@ class _LeaveScreenState extends State<LeaveScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Apply for Leave',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(t.applyForLeave,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 18)),
               const SizedBox(height: 16),
-
               DropdownButtonFormField<String>(
                 value: _leaveType,
-                decoration: const InputDecoration(labelText: 'Leave Type'),
+                decoration: InputDecoration(labelText: t.leaveType),
                 items: [
                   'FULL DAY',
                   'HALF MORNING',
                   'HALF AFTERNOON',
                   'MORE THAN ONE DAY'
                 ]
-                    .map((e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e),
-                        ))
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (v) => setState(() => _leaveType = v ?? 'FULL DAY'),
               ),
               const SizedBox(height: 12),
-
               if (_leaveType == 'MORE THAN ONE DAY') ...[
                 Row(
                   children: [
-                    const Text('From: '),
+                    Text("${t.from}: "),
                     TextButton(
                       onPressed: () => _pickDate(isFrom: true),
                       child: Text(
@@ -271,7 +277,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
                 ),
                 Row(
                   children: [
-                    const Text('To: '),
+                    Text("${t.to}: "),
                     TextButton(
                       onPressed: () => _pickDate(isFrom: false),
                       child: Text(
@@ -284,7 +290,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
               ] else ...[
                 Row(
                   children: [
-                    const Text('Date: '),
+                    Text("${t.date}: "),
                     TextButton(
                       onPressed: () => _pickDate(isFrom: true),
                       child: Text(
@@ -295,24 +301,19 @@ class _LeaveScreenState extends State<LeaveScreen> {
                   ],
                 ),
               ],
-
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _reasonController,
-                decoration: const InputDecoration(labelText: 'Reason'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Enter reason' : null,
+                decoration: InputDecoration(labelText: t.reason),
+                validator: (v) => v == null || v.isEmpty ? t.enterReason : null,
               ),
               const SizedBox(height: 16),
-
-              // Audio Recorder Section
               Row(
                 children: [
                   ElevatedButton.icon(
                     onPressed: _toggleRecording,
                     icon: Icon(_recording ? Icons.stop : Icons.mic),
-                    label: Text(_recording ? 'Stop Recording' : 'Record Audio'),
+                    label: Text(_recording ? t.stopRecording : t.recordAudio),
                   ),
                   const SizedBox(width: 10),
                   if (_audioPath != null)
@@ -335,13 +336,12 @@ class _LeaveScreenState extends State<LeaveScreen> {
                     ),
                 ],
               ),
-
               if (_recording) ...[
                 const SizedBox(height: 16),
                 Center(
                   child: Column(
                     children: [
-                      const Text('Recording... Speak now!'),
+                      Text(t.recordingSpeakNow),
                       const SizedBox(height: 8),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 100),
@@ -356,12 +356,11 @@ class _LeaveScreenState extends State<LeaveScreen> {
                   ),
                 ),
               ],
-
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: _applyLeave,
                 icon: const Icon(Icons.send),
-                label: const Text('Submit Leave'),
+                label: Text(t.submitLeave),
               ),
             ],
           ),
@@ -372,12 +371,14 @@ class _LeaveScreenState extends State<LeaveScreen> {
 
   Future<void> _pickDate({required bool isFrom}) async {
     final now = DateTime.now();
+
     final picked = await showDatePicker(
       context: context,
       initialDate: isFrom ? _fromDate : _toDate,
       firstDate: now.subtract(const Duration(days: 1)),
       lastDate: now.add(const Duration(days: 90)),
     );
+
     if (picked != null) {
       setState(() {
         if (isFrom) {

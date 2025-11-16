@@ -78,5 +78,82 @@
   "overdueIn": "காலாவதியாகும் நாட்கள்",
   "dueDate": "கடைசி தேதி",
   "transactions": "பரிவர்த்தனைகள்",
-  "noTransactionsFound": "பரிவர்த்தனைகள் எதுவும் இல்லை"
+  "noTransactionsFound": "பரிவர்த்தனைகள் எதுவும் இல்லை",
+  "feeTransactionHistory": "கட்டண பரிவர்த்தனை வரலாறு",
+  "feeReceipt": "கட்டண ரசீது",
+  "paymentStatus": "பணி செலுத்தும் நிலை",
+  "paymentMethod": "பணி செலுத்தும் முறை",
+  "transactionId": "பரிவர்த்தனை அடையாள எண்",
+  "transactionDate": "பரிவர்த்தனை தேதி",
+  "feesDetailsTitle": "கட்டண விவரங்கள்",
+  "feesSummaryTab": "சுருக்கம்",
+  "feesTransactionsTab": "பரிவர்த்தனைகள்",
+
+  "profile": "சுயவிவரம்",
+"name": "பெயர்",
+"registerNo": "பதிவு எண்",
+"mobile": "மொபைல்",
+"email": "மின்னஞ்சல்",
+"state": "மாநிலம்",
+"district": "மாவட்டம்",
+
+"alternateMobileNumber": "மாற்று மொபைல் எண்",
+"enterAlternateNumber": "மாற்று எண்ணை உள்ளிடவும்",
+"enterValidNumber": "சரியான எண்ணை உள்ளிடவும்",
+
+"updateAlternateMobile": "மாற்று எண்ணை புதுப்பிக்கவும்",
+"saving": "சேமிக்கிறது...",
+"updateFailed": "புதுப்பிப்பு தோல்வியடைந்தது",
+
+"leaveManagement": "விடுப்பு மேலாண்மை",
+"applyForLeave": "விடுப்புக்கு விண்ணப்பிக்கவும்",
+"leaveType": "விடுப்பு வகை",
+
+"fullDay": "முழு நாள்",
+"halfMorning": "காலை பாதி",
+"halfAfternoon": "மதியம் பாதி",
+"moreThanOneDay": "ஒருக்கும் மேற்பட்ட நாள்",
+
+"from": "இருந்து",
+"to": "வரை",
+"date": "தேதி",
+
+"reason": "காரணம்",
+"enterReason": "காரணத்தை உள்ளிடவும்",
+
+"recordAudio": "ஆடியோ பதிவு செய்யவும்",
+"stopRecording": "பதிவை நிறுத்தவும்",
+"recordingSpeakNow": "பதிவு நடைபெறுகிறது... இப்போது பேசவும்!",
+
+"submitLeave": "விடுப்பு சமர்ப்பிக்கவும்",
+"noPendingLeaves": "நிலுவையில் விடுப்புகள் இல்லை",
+"pendingLeaves": "நிலுவை விடுப்புகள்",
+"cancelLeave": "ரத்து செய்",
+
+"microphonePermissionDenied": "மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது",
+"somethingWentWrong": "ஏதோ தவறு நடந்தது",
+"errorCancellingLeave": "விடுப்பை ரத்து செய்வதில் பிழை",
+
+"examTimetable": "நேர அட்டவணை",
+"examResult": "மதிப்பெண்கள்",
+"noTimetable": "நேர அட்டவணை இல்லை",
+"noResult": "மதிப்பெண்கள் இல்லை",
+
+"outOf": "மொத்தம்",
+"remark": "குறிப்பு",
+"mark": "மதிப்பெண்",
+"rank": "தரவரிசை",
+"total": "மொத்தம்",
+"percentage": "சதவிகிதம்",
+"result": "விளைவு",
+
+"session": "அமர்வு",
+"noTimetable": "நேர அட்டவணை இல்லை",
+
+"menuTitle": "பட்டியல்",
+"announcements": "அறிவிப்புகள்"
+
+
+
+
 }

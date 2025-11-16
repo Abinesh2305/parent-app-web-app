@@ -19,6 +19,7 @@ import 'screens/attendance_screen.dart';
 import 'screens/homework_screen.dart';
 import 'screens/fees_screen.dart';
 import 'screens/leave_screen.dart';
+import 'services/force_update_service.dart';
 
 // Global navigator key for navigation even when app is not in foreground
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -30,8 +31,9 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  await _handleUserAndNavigate(message);
-  print("📩 Background notification handled: ${message.notification?.title}");
+
+  final box = await Hive.openBox('settings');
+  box.put('pending_fcm', message.data); // store only data
 }
 
 Future<void> main() async {
@@ -136,7 +138,7 @@ class _MyAppState extends State<MyApp> {
   ThemeMode _getThemeFromHive(String theme) {
     if (theme == 'light') return ThemeMode.light;
     if (theme == 'dark') return ThemeMode.dark;
-    return ThemeMode.system;
+    return ThemeMode.light; // fallback, NEVER return system
   }
 
   Future<void> _setThemeMode(ThemeMode mode) async {
@@ -147,20 +149,51 @@ class _MyAppState extends State<MyApp> {
   void _toggleTheme() {
     if (_themeMode == ThemeMode.light) {
       _setThemeMode(ThemeMode.dark);
-    } else if (_themeMode == ThemeMode.dark) {
-      _setThemeMode(ThemeMode.system);
     } else {
       _setThemeMode(ThemeMode.light);
     }
   }
 
-  void _toggleLanguage() {
+  void _toggleLanguage() async {
+    final box = Hive.box('settings');
+    String current = box.get('language', defaultValue: 'en');
+    String newLang = current == 'en' ? 'ta' : 'en';
+
+    // update UI
     setState(() {
-      _locale = _locale.languageCode == 'en'
-          ? const Locale('ta')
-          : const Locale('en');
+      _locale = Locale(newLang);
     });
-    Hive.box('settings').put('language', _locale.languageCode);
+
+    // save locally
+    box.put('language', newLang);
+
+    // update user in Hive
+    final user = box.get('user');
+    if (user != null) {
+      user['language'] = newLang;
+      box.put('user', user);
+    }
+
+    // update DB
+    try {
+      await DioClient.dio.post(
+        'update-language',
+        data: {
+          'user_id': user?['id'],
+          'language': newLang,
+        },
+      );
+    } catch (_) {}
+
+    // refresh entire app to apply new language
+    navigatorKey.currentState?.pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => LaunchDecider(
+          onToggleTheme: _toggleTheme,
+          onToggleLanguage: _toggleLanguage,
+        ),
+      ),
+    );
   }
 
   @override
@@ -188,36 +221,42 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class LaunchDecider extends StatelessWidget {
+class LaunchDecider extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final VoidCallback onToggleLanguage;
-  final bool openNotificationTab;
 
   const LaunchDecider({
     super.key,
     required this.onToggleTheme,
     required this.onToggleLanguage,
-    this.openNotificationTab = false,
   });
+
+  @override
+  State<LaunchDecider> createState() => _LaunchDeciderState();
+}
+
+class _LaunchDeciderState extends State<LaunchDecider> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ForceUpdateService.checkForUpdate(); // Trigger here only
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final box = Hive.box('settings');
-    final user = box.get('user');
-    final token = box.get('token');
-
-    if (user != null && token != null) {
-      return MainNavigationScreen(
-        onToggleTheme: onToggleTheme,
-        onToggleLanguage: onToggleLanguage,
-        openNotificationTab: openNotificationTab,
-      );
-    } else {
-      return LoginScreen(
-        onToggleTheme: onToggleTheme,
-        onToggleLanguage: onToggleLanguage,
-      );
-    }
+    return box.get('user') != null && box.get('token') != null
+        ? MainNavigationScreen(
+            onToggleTheme: widget.onToggleTheme,
+            onToggleLanguage: widget.onToggleLanguage,
+          )
+        : LoginScreen(
+            onToggleTheme: widget.onToggleTheme,
+            onToggleLanguage: widget.onToggleLanguage,
+          );
   }
 }
 
@@ -228,6 +267,7 @@ class MainNavigationScreen extends StatefulWidget {
   final bool openLeaveTab;
   final bool openFeesTab;
   final bool openHomeworkTab;
+  final bool openAttendanceTab;
 
   const MainNavigationScreen({
     super.key,
@@ -237,6 +277,7 @@ class MainNavigationScreen extends StatefulWidget {
     this.openLeaveTab = false,
     this.openFeesTab = false,
     this.openHomeworkTab = false,
+    this.openAttendanceTab = false,
   });
 
   @override
@@ -251,6 +292,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+
+    _checkPendingFCM();
+
+    // ForceUpdateService.checkForUpdate(); // Google Force Update
 
     _subscribeToAllScholarTopics();
 
@@ -272,7 +317,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         setState(() => _currentIndex = 1);
         _pageController.jumpToPage(1);
       });
+    } else if (widget.openAttendanceTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() => _currentIndex = 4);
+        _pageController.jumpToPage(4);
+      });
     }
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final senderName = message.data['sender_name'] ?? '';
       final title = message.notification?.title ?? 'Notification';
@@ -303,9 +354,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _checkInitialMessage();
   }
 
+  Future<void> _checkPendingFCM() async {
+    final box = Hive.box('settings');
+    final data = box.get('pending_fcm');
+
+    if (data != null) {
+      box.delete('pending_fcm');
+
+      await _handleUserAndNavigate(
+        RemoteMessage(data: Map<String, dynamic>.from(data)),
+      );
+    }
+  }
+
   Future<void> _checkInitialMessage() async {
-    final message = await FirebaseMessaging.instance.getInitialMessage();
-    if (message != null) await _handleNotificationClick(message);
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    final msg = await FirebaseMessaging.instance.getInitialMessage();
+    if (msg != null) {
+      await _handleNotificationClick(msg);
+    }
   }
 
   Future<void> _handleNotificationClick(RemoteMessage message) async {
@@ -339,11 +407,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         final schoolId = s['school_college_id'];
         final scholarId = s['id'];
         if (schoolId != null) {
-          await fcm.subscribeToTopic('school_$schoolId'); // match Laravel
+          await fcm.subscribeToTopic("School_Scholars_$schoolId");
         }
         if (scholarId != null) {
-          await fcm.subscribeToTopic(
-              'student_$scholarId'); // optional match if needed
+          await fcm.subscribeToTopic("Scholar_$scholarId");
         }
       }
     } catch (e) {
@@ -611,10 +678,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       child: Scaffold(
         appBar: TopNavBar(
           studentName: studentName,
+          language: Hive.box('settings').get('language', defaultValue: 'en'),
           onSwitch: _showUserSwitcher,
           onProfileTap: () => _onNavigate(0),
           onLogout: _logoutUser,
           onTranslate: widget.onToggleLanguage,
+          onToggleTheme: widget.onToggleTheme, // ADDED
         ),
         body: PageView(
           controller: _pageController,
@@ -626,15 +695,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           currentIndex: _currentIndex,
           onTap: _onNavigate,
         ),
-        floatingActionButton: FloatingActionButton(
-          mini: true,
-          onPressed: widget.onToggleTheme,
-          child: Icon(
-            Theme.of(context).brightness == Brightness.light
-                ? Icons.dark_mode
-                : Icons.light_mode,
-          ),
-        ),
+        // floatingActionButton: FloatingActionButton(
+        //   mini: true,
+        //   onPressed: widget.onToggleTheme,
+        //   child: Icon(
+        //     Theme.of(context).brightness == Brightness.light
+        //         ? Icons.dark_mode
+        //         : Icons.light_mode,
+        //   ),
+        // ),
       ),
     );
   }

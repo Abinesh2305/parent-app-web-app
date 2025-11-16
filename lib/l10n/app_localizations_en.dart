@@ -226,4 +226,160 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTransactionsFound => 'No transactions found';
+
+  @override
+  String get feesDetailsTitle => 'Fees Details';
+
+  @override
+  String get feesSummaryTab => 'Summary';
+
+  @override
+  String get feesTransactionsTab => 'Transactions';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get registerNo => 'Register No';
+
+  @override
+  String get mobile => 'Mobile';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get state => 'State';
+
+  @override
+  String get district => 'District';
+
+  @override
+  String get alternateMobileNumber => 'Alternate Mobile Number';
+
+  @override
+  String get enterAlternateNumber => 'Enter alternate number';
+
+  @override
+  String get enterValidNumber => 'Enter valid number';
+
+  @override
+  String get updateAlternateMobile => 'Update Alternate Mobile';
+
+  @override
+  String get saving => 'Saving...';
+
+  @override
+  String get updateFailed => 'Update failed';
+
+  @override
+  String get leaveManagement => 'Leave Management';
+
+  @override
+  String get applyForLeave => 'Apply for Leave';
+
+  @override
+  String get leaveType => 'Leave Type';
+
+  @override
+  String get fullDay => 'FULL DAY';
+
+  @override
+  String get halfMorning => 'HALF MORNING';
+
+  @override
+  String get halfAfternoon => 'HALF AFTERNOON';
+
+  @override
+  String get moreThanOneDay => 'MORE THAN ONE DAY';
+
+  @override
+  String get from => 'From';
+
+  @override
+  String get to => 'To';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get reason => 'Reason';
+
+  @override
+  String get enterReason => 'Enter reason';
+
+  @override
+  String get recordAudio => 'Record Audio';
+
+  @override
+  String get stopRecording => 'Stop Recording';
+
+  @override
+  String get recordingSpeakNow => 'Recording... Speak now!';
+
+  @override
+  String get submitLeave => 'Submit Leave';
+
+  @override
+  String get noPendingLeaves => 'No pending leaves';
+
+  @override
+  String get pendingLeaves => 'Pending Leaves';
+
+  @override
+  String get cancelLeave => 'Cancel';
+
+  @override
+  String get microphonePermissionDenied => 'Microphone permission denied';
+
+  @override
+  String get somethingWentWrong => 'Something went wrong';
+
+  @override
+  String get errorCancellingLeave => 'Error cancelling leave';
+
+  @override
+  String get examTimetable => 'Timetable';
+
+  @override
+  String get examResult => 'Result';
+
+  @override
+  String get noTimetable => 'No timetable available';
+
+  @override
+  String get noResult => 'No results available';
+
+  @override
+  String get outOf => 'OUT OF';
+
+  @override
+  String get remark => 'Remark';
+
+  @override
+  String get mark => 'Mark';
+
+  @override
+  String get rank => 'Rank';
+
+  @override
+  String get total => 'Total';
+
+  @override
+  String get percentage => 'Percentage';
+
+  @override
+  String get result => 'Result';
+
+  @override
+  String get session => 'Session';
+
+  @override
+  String get menuTitle => 'Menu';
+
+  @override
+  String get announcements => 'Announcements';
 }

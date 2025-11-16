@@ -226,4 +226,160 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get noTransactionsFound => 'பரிவர்த்தனைகள் எதுவும் இல்லை';
+
+  @override
+  String get feesDetailsTitle => 'கட்டண விவரங்கள்';
+
+  @override
+  String get feesSummaryTab => 'சுருக்கம்';
+
+  @override
+  String get feesTransactionsTab => 'பரிவர்த்தனைகள்';
+
+  @override
+  String get profile => 'சுயவிவரம்';
+
+  @override
+  String get name => 'பெயர்';
+
+  @override
+  String get registerNo => 'பதிவு எண்';
+
+  @override
+  String get mobile => 'மொபைல்';
+
+  @override
+  String get email => 'மின்னஞ்சல்';
+
+  @override
+  String get state => 'மாநிலம்';
+
+  @override
+  String get district => 'மாவட்டம்';
+
+  @override
+  String get alternateMobileNumber => 'மாற்று மொபைல் எண்';
+
+  @override
+  String get enterAlternateNumber => 'மாற்று எண்ணை உள்ளிடவும்';
+
+  @override
+  String get enterValidNumber => 'சரியான எண்ணை உள்ளிடவும்';
+
+  @override
+  String get updateAlternateMobile => 'மாற்று எண்ணை புதுப்பிக்கவும்';
+
+  @override
+  String get saving => 'சேமிக்கிறது...';
+
+  @override
+  String get updateFailed => 'புதுப்பிப்பு தோல்வியடைந்தது';
+
+  @override
+  String get leaveManagement => 'விடுப்பு மேலாண்மை';
+
+  @override
+  String get applyForLeave => 'விடுப்புக்கு விண்ணப்பிக்கவும்';
+
+  @override
+  String get leaveType => 'விடுப்பு வகை';
+
+  @override
+  String get fullDay => 'முழு நாள்';
+
+  @override
+  String get halfMorning => 'காலை பாதி';
+
+  @override
+  String get halfAfternoon => 'மதியம் பாதி';
+
+  @override
+  String get moreThanOneDay => 'ஒருக்கும் மேற்பட்ட நாள்';
+
+  @override
+  String get from => 'இருந்து';
+
+  @override
+  String get to => 'வரை';
+
+  @override
+  String get date => 'தேதி';
+
+  @override
+  String get reason => 'காரணம்';
+
+  @override
+  String get enterReason => 'காரணத்தை உள்ளிடவும்';
+
+  @override
+  String get recordAudio => 'ஆடியோ பதிவு செய்யவும்';
+
+  @override
+  String get stopRecording => 'பதிவை நிறுத்தவும்';
+
+  @override
+  String get recordingSpeakNow => 'பதிவு நடைபெறுகிறது... இப்போது பேசவும்!';
+
+  @override
+  String get submitLeave => 'விடுப்பு சமர்ப்பிக்கவும்';
+
+  @override
+  String get noPendingLeaves => 'நிலுவையில் விடுப்புகள் இல்லை';
+
+  @override
+  String get pendingLeaves => 'நிலுவை விடுப்புகள்';
+
+  @override
+  String get cancelLeave => 'ரத்து செய்';
+
+  @override
+  String get microphonePermissionDenied => 'மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது';
+
+  @override
+  String get somethingWentWrong => 'ஏதோ தவறு நடந்தது';
+
+  @override
+  String get errorCancellingLeave => 'விடுப்பை ரத்து செய்வதில் பிழை';
+
+  @override
+  String get examTimetable => 'நேர அட்டவணை';
+
+  @override
+  String get examResult => 'மதிப்பெண்கள்';
+
+  @override
+  String get noTimetable => 'நேர அட்டவணை இல்லை';
+
+  @override
+  String get noResult => 'மதிப்பெண்கள் இல்லை';
+
+  @override
+  String get outOf => 'மொத்தம்';
+
+  @override
+  String get remark => 'குறிப்பு';
+
+  @override
+  String get mark => 'மதிப்பெண்';
+
+  @override
+  String get rank => 'தரவரிசை';
+
+  @override
+  String get total => 'மொத்தம்';
+
+  @override
+  String get percentage => 'சதவிகிதம்';
+
+  @override
+  String get result => 'விளைவு';
+
+  @override
+  String get session => 'அமர்வு';
+
+  @override
+  String get menuTitle => 'பட்டியல்';
+
+  @override
+  String get announcements => 'அறிவிப்புகள்';
 }

@@ -79,6 +79,75 @@
   "overdueIn": "Overdue In",
   "dueDate": "Due Date",
   "transactions": "Transactions",
-  "noTransactionsFound": "No transactions found"
+  "noTransactionsFound": "No transactions found",
+  "summary": "Summary",
+  "feesDetailsTitle": "Fees Details",
+  "feesSummaryTab": "Summary",
+  "feesTransactionsTab": "Transactions",
+
+  "profile": "Profile",
+"name": "Name",
+"registerNo": "Register No",
+"mobile": "Mobile",
+"email": "Email",
+"state": "State",
+"district": "District",
+
+"alternateMobileNumber": "Alternate Mobile Number",
+"enterAlternateNumber": "Enter alternate number",
+"enterValidNumber": "Enter valid number",
+
+"updateAlternateMobile": "Update Alternate Mobile",
+"saving": "Saving...",
+"updateFailed": "Update failed",
+
+"leaveManagement": "Leave Management",
+"applyForLeave": "Apply for Leave",
+"leaveType": "Leave Type",
+
+"fullDay": "FULL DAY",
+"halfMorning": "HALF MORNING",
+"halfAfternoon": "HALF AFTERNOON",
+"moreThanOneDay": "MORE THAN ONE DAY",
+
+"from": "From",
+"to": "To",
+"date": "Date",
+
+"reason": "Reason",
+"enterReason": "Enter reason",
+
+"recordAudio": "Record Audio",
+"stopRecording": "Stop Recording",
+"recordingSpeakNow": "Recording... Speak now!",
+
+"submitLeave": "Submit Leave",
+"noPendingLeaves": "No pending leaves",
+"pendingLeaves": "Pending Leaves",
+"cancelLeave": "Cancel",
+
+"microphonePermissionDenied": "Microphone permission denied",
+"somethingWentWrong": "Something went wrong",
+"errorCancellingLeave": "Error cancelling leave",
+
+"examTimetable": "Timetable",
+"examResult": "Result",
+"noTimetable": "No timetable available",
+"noResult": "No results available",
+
+"outOf": "OUT OF",
+"remark": "Remark",
+"mark": "Mark",
+"rank": "Rank",
+"total": "Total",
+"percentage": "Percentage",
+"result": "Result",
+
+"session": "Session",
+"noTimetable": "No timetable available",
+
+"menuTitle": "Menu",
+"announcements": "Announcements"
+
 
 }

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
+import 'package:school_dashboard/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -27,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     setState(() => _loading = true);
     final res = await ProfileService().getProfileDetails();
+
     if (res != null && res['status'] == 1) {
       final data = res['data'];
       setState(() {
@@ -52,35 +54,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (res?['status'] == 1) _loadProfile();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      final file = File(picked.path);
-      setState(() => _pickedImage = file);
-
-      final res = await ProfileService().updateProfileImage(file);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res?['message'] ?? 'Image upload failed')),
-      );
-      if (res?['status'] == 1) _loadProfile();
-    }
-  }
-
-  Future<void> _deleteImage() async {
-    final res = await ProfileService().deleteProfileImage();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(res?['message'] ?? 'Delete failed')),
-    );
-    if (res?['status'] == 1) _loadProfile();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(t.profile)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -90,11 +70,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _buildProfileHeader(theme),
+                    _buildProfileHeader(colorScheme),
                     const SizedBox(height: 16),
-                    _buildReadOnlyInfo(),
-                    const Divider(height: 32),
-                    _buildAlternateMobileForm(),
+                    Card(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: _buildReadOnlyInfo(colorScheme, t),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildAlternateMobileForm(colorScheme, t),
                   ],
                 ),
               ),
@@ -102,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(ThemeData theme) {
+  Widget _buildProfileHeader(ColorScheme colorScheme) {
     final imageUrl = _profile?['is_profile_image'];
     ImageProvider<Object>? imageProvider;
 
@@ -118,10 +107,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         CircleAvatar(
           radius: 60,
-          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+          backgroundColor: colorScheme.primary.withOpacity(0.1),
           backgroundImage: imageProvider,
-          child:
-              imageProvider == null ? const Icon(Icons.person, size: 60) : null,
+          child: imageProvider == null
+              ? Icon(Icons.person, size: 60, color: colorScheme.onSurface)
+              : null,
         ),
         const SizedBox(height: 10),
         Row(
@@ -144,62 +134,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildReadOnlyInfo() {
+  Widget _buildReadOnlyInfo(ColorScheme colorScheme, AppLocalizations t) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoTile('Name', _profile?['name'] ?? '-'),
-        _infoTile('Register No', _profile?['reg_no'] ?? '-'),
-        _infoTile('Mobile', _profile?['mobile'] ?? '-'),
-        _infoTile('Email', _profile?['email'] ?? '—'),
-        _infoTile('State', _profile?['is_state_name'] ?? '-'),
-        _infoTile('District', _profile?['is_district_name'] ?? '-'),
+        _infoTile(t.name, _profile?['name'] ?? '-', colorScheme),
+        _infoTile(t.registerNo, _profile?['reg_no'] ?? '-', colorScheme),
+        _infoTile(t.mobile, _profile?['mobile'] ?? '-', colorScheme),
+        _infoTile(t.email, _profile?['email'] ?? '—', colorScheme),
+        _infoTile(t.state, _profile?['is_state_name'] ?? '-', colorScheme),
+        _infoTile(
+            t.district, _profile?['is_district_name'] ?? '-', colorScheme),
       ],
     );
   }
 
-  Widget _infoTile(String label, String value) {
+  Widget _infoTile(String label, String value, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           SizedBox(
-              width: 130,
-              child: Text(label,
-                  style: const TextStyle(fontWeight: FontWeight.bold))),
+            width: 130,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ),
           Expanded(
-              child:
-                  Text(value, style: const TextStyle(color: Colors.black87))),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAlternateMobileForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _altMobileCtrl,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Alternate Mobile Number',
-              prefixIcon: Icon(Icons.phone_android),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Enter alternate number';
-              if (v.length < 8 || v.length > 10) return 'Enter valid number';
-              return null;
-            },
+  Widget _buildAlternateMobileForm(
+      ColorScheme colorScheme, AppLocalizations t) {
+    return Card(
+      color: colorScheme.primary.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _altMobileCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: t.alternateMobileNumber,
+                  labelStyle:
+                      TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                  prefixIcon: Icon(
+                    Icons.phone_android,
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return t.enterAlternateNumber;
+                  if (v.length < 8 || v.length > 10) return t.enterValidNumber;
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: _saving ? null : _updateAlternateMobile,
+                  icon: const Icon(Icons.save),
+                  label: Text(_saving ? t.saving : t.updateAlternateMobile),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _saving ? null : _updateAlternateMobile,
-            icon: const Icon(Icons.save),
-            label: Text(_saving ? 'Saving...' : 'Update Alternate Mobile'),
-          ),
-        ],
+        ),
       ),
     );
   }

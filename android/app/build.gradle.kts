@@ -7,44 +7,40 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// === Load .env ===
-val envFile = rootProject.file(".env")
-val envProps = Properties()
-if (envFile.exists()) {
-    envFile.inputStream().use { envProps.load(it) }
-}
-
-val appId = envProps.getProperty("APP_ID", "com.example.school_parent_app")
-val appName = envProps.getProperty("APP_NAME", "School Parent App")
-
 android {
-    namespace = appId
+    namespace = "com.clasteq.clasteqdemo"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
-        applicationId = appId
+        applicationId = "com.clasteq.clasteqdemo"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+
+        // App Name for Android manifest
+        manifestPlaceholders["appName"] = "CPL Demo School"
     }
 
-    // Auto-set label (replaces app_name dynamically)
-    applicationVariants.all {
-        outputs.all {
-            val resFile = file("src/main/res/values/strings.xml")
-            if (resFile.exists()) {
-                val content = resFile.readText()
-                if (content.contains("<string name=\"app_name\">")) {
-                    val newContent = content.replace(
-                        Regex("<string name=\"app_name\">.*?</string>"),
-                        "<string name=\"app_name\">$appName</string>"
-                    )
-                    resFile.writeText(newContent)
-                }
-            }
+    signingConfigs {
+        create("release") {
+            storeFile = file("cpldemo.jks")
+            storePassword = "123456"
+            keyAlias = "cpldemo"
+            keyPassword = "123456"
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+        getByName("debug") {
+            // debug uses no signingConfig override
         }
     }
 
@@ -56,12 +52,6 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
-        }
     }
 }
 

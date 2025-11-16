@@ -67,16 +67,17 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Fees Details"),
+        title: Text(t.feesDetailsTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: "Summary"),
-            Tab(text: "Transactions"),
+          tabs: [
+            Tab(text: t.feesSummaryTab),
+            Tab(text: t.feesTransactionsTab),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:school_dashboard/l10n/app_localizations.dart';
 import '../main.dart';
 import '../main.dart' show MainNavigationScreen;
 import '../screens/exam_screen.dart';
@@ -8,40 +9,45 @@ import '../screens/profile_screen.dart';
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
-  static const List<Map<String, dynamic>> menuItems = [
-    {'icon': Icons.person_outline, 'label': 'Profile'},
-    {'icon': Icons.campaign_outlined, 'label': 'Announcements'},
-    {'icon': Icons.calendar_today_outlined, 'label': 'Leave Management'},
-    {'icon': Icons.fact_check_outlined, 'label': 'Exams'},
-    {'icon': Icons.currency_rupee, 'label': 'Fees'},
-    {'icon': Icons.book_outlined, 'label': 'Homework'},
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final t = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+
+    final List<Map<String, dynamic>> menuItems = [
+      {'icon': Icons.person_outline, 'label': t.profile},
+      {'icon': Icons.campaign_outlined, 'label': t.announcements},
+      {'icon': Icons.calendar_today_outlined, 'label': t.leaveManagement},
+      {'icon': Icons.fact_check_outlined, 'label': t.exams},
+      {'icon': Icons.currency_rupee, 'label': t.fees},
+      {'icon': Icons.book_outlined, 'label': t.homework},
+      {'icon': Icons.how_to_reg_outlined, 'label': t.attendance},
+    ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Menu')),
+      appBar: AppBar(
+        title: Text(t.menuTitle),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1,
+            childAspectRatio: 0.78, // more height
           ),
           itemCount: menuItems.length,
           itemBuilder: (context, index) {
             final item = menuItems[index];
+
             return _buildMenuItem(
               icon: item['icon'],
               label: item['label'],
-              colorScheme: colorScheme,
+              colorScheme: cs,
               onTap: () {
                 switch (item['label']) {
-                  case 'Profile':
+                  case var label when label == t.profile:
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ProfileScreen(),
@@ -49,7 +55,7 @@ class MenuScreen extends StatelessWidget {
                     );
                     break;
 
-                  case 'Announcements':
+                  case var label when label == t.announcements:
                     navigatorKey.currentState?.pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (_) => MainNavigationScreen(
@@ -62,20 +68,15 @@ class MenuScreen extends StatelessWidget {
                     );
                     break;
 
-                  case 'Leave Management':
-                    navigatorKey.currentState?.pushAndRemoveUntil(
+                  case var label when label == t.leaveManagement:
+                    Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => MainNavigationScreen(
-                          onToggleTheme: () {},
-                          onToggleLanguage: () {},
-                          openLeaveTab: true,
-                        ),
+                        builder: (_) => const LeaveScreen(),
                       ),
-                      (route) => false,
                     );
                     break;
 
-                  case 'Exams':
+                  case var label when label == t.exams:
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ExamScreen(),
@@ -83,7 +84,7 @@ class MenuScreen extends StatelessWidget {
                     );
                     break;
 
-                  case 'Fees':
+                  case var label when label == t.fees:
                     navigatorKey.currentState?.pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (_) => MainNavigationScreen(
@@ -96,7 +97,7 @@ class MenuScreen extends StatelessWidget {
                     );
                     break;
 
-                  case 'Homework':
+                  case var label when label == t.homework:
                     navigatorKey.currentState?.pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (_) => MainNavigationScreen(
@@ -109,9 +110,22 @@ class MenuScreen extends StatelessWidget {
                     );
                     break;
 
+                  case var label when label == t.attendance:
+                    navigatorKey.currentState?.pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => MainNavigationScreen(
+                          onToggleTheme: () {},
+                          onToggleLanguage: () {},
+                          openAttendanceTab: true,
+                        ),
+                      ),
+                      (route) => false,
+                    );
+                    break;
+
                   default:
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${item['label']} tapped')),
+                      SnackBar(content: Text(item['label'])),
                     );
                 }
               },
@@ -140,15 +154,18 @@ class MenuScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 36, color: colorScheme.primary),
               const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface,
+
+              // WRAP text fully (NO overflow, NO ellipsis)
+              SizedBox(
+                width: double.infinity, // allows full wrapping
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],

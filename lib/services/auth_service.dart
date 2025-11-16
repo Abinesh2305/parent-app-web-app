@@ -30,6 +30,7 @@ class AuthService {
         // Save to Hive
         var box = Hive.box('settings');
         box.put("user", user);
+        box.put("language", user["language"] ?? "en");
         box.put("token", user["api_token"]);
 
         // Safe Topic Subscription

@@ -1294,74 +1294,42 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _downloadFile(BuildContext context, String url) async {
     try {
-      if (Platform.isAndroid) {
-        // Get Android version
-        int sdkInt =
-            int.tryParse(Platform.version.split('(').first.trim()) ?? 33;
-
-        // Handle permissions based on version
-        if (sdkInt >= 33) {
-          // Android 13+ (Tiramisu, API 33+)
-          Map<Permission, PermissionStatus> statuses = await [
-            Permission.photos,
-            Permission.videos,
-            Permission.audio,
-          ].request();
-
-          if (statuses.values.any((status) => status.isDenied)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Media permission is required")),
-            );
-            return;
-          }
-        } else {
-          // Android 12 and below
-          var status = await Permission.storage.status;
-          if (!status.isGranted) {
-            status = await Permission.storage.request();
-            if (!status.isGranted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Storage permission is required")),
-              );
-              return;
-            }
-          }
-        }
-      }
-
-      // Choose a suitable download directory
       Directory? dir;
+
       if (Platform.isAndroid) {
+        // Android private folder (no permission required)
         dir = await getExternalStorageDirectory();
       } else {
+        // iOS
         dir = await getApplicationDocumentsDirectory();
       }
 
       if (dir == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cannot access download folder")),
+          const SnackBar(content: Text("Cannot access storage")),
         );
         return;
       }
 
-      // Start download
       final fileName = url.split('/').last;
       final filePath = "${dir.path}/$fileName";
-      final dio = Dio();
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Downloading $fileName...")));
+      final dio = Dio();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Downloading $fileName...")),
+      );
 
       await dio.download(url, filePath);
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Saved to: ${dir.path}")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Saved in: ${dir.path}")),
+      );
 
-      // Try opening the file
       await OpenFilex.open(filePath);
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Download failed: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Download failed: $e")),
+      );
     }
   }
 

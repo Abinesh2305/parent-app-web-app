@@ -532,6 +532,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No transactions found'**
   String get noTransactionsFound;
+
+  /// No description provided for @feesDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees Details'**
+  String get feesDetailsTitle;
+
+  /// No description provided for @feesSummaryTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get feesSummaryTab;
+
+  /// No description provided for @feesTransactionsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get feesTransactionsTab;
+
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @registerNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Register No'**
+  String get registerNo;
+
+  /// No description provided for @mobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get mobile;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @state.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get state;
+
+  /// No description provided for @district.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get district;
+
+  /// No description provided for @alternateMobileNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Alternate Mobile Number'**
+  String get alternateMobileNumber;
+
+  /// No description provided for @enterAlternateNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter alternate number'**
+  String get enterAlternateNumber;
+
+  /// No description provided for @enterValidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter valid number'**
+  String get enterValidNumber;
+
+  /// No description provided for @updateAlternateMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Alternate Mobile'**
+  String get updateAlternateMobile;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get saving;
+
+  /// No description provided for @updateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Update failed'**
+  String get updateFailed;
+
+  /// No description provided for @leaveManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Management'**
+  String get leaveManagement;
+
+  /// No description provided for @applyForLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply for Leave'**
+  String get applyForLeave;
+
+  /// No description provided for @leaveType.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Type'**
+  String get leaveType;
+
+  /// No description provided for @fullDay.
+  ///
+  /// In en, this message translates to:
+  /// **'FULL DAY'**
+  String get fullDay;
+
+  /// No description provided for @halfMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'HALF MORNING'**
+  String get halfMorning;
+
+  /// No description provided for @halfAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'HALF AFTERNOON'**
+  String get halfAfternoon;
+
+  /// No description provided for @moreThanOneDay.
+  ///
+  /// In en, this message translates to:
+  /// **'MORE THAN ONE DAY'**
+  String get moreThanOneDay;
+
+  /// No description provided for @from.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get from;
+
+  /// No description provided for @to.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get to;
+
+  /// No description provided for @date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// No description provided for @reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get reason;
+
+  /// No description provided for @enterReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter reason'**
+  String get enterReason;
+
+  /// No description provided for @recordAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Audio'**
+  String get recordAudio;
+
+  /// No description provided for @stopRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Recording'**
+  String get stopRecording;
+
+  /// No description provided for @recordingSpeakNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording... Speak now!'**
+  String get recordingSpeakNow;
+
+  /// No description provided for @submitLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Leave'**
+  String get submitLeave;
+
+  /// No description provided for @noPendingLeaves.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending leaves'**
+  String get noPendingLeaves;
+
+  /// No description provided for @pendingLeaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Leaves'**
+  String get pendingLeaves;
+
+  /// No description provided for @cancelLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelLeave;
+
+  /// No description provided for @microphonePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied'**
+  String get microphonePermissionDenied;
+
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get somethingWentWrong;
+
+  /// No description provided for @errorCancellingLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Error cancelling leave'**
+  String get errorCancellingLeave;
+
+  /// No description provided for @examTimetable.
+  ///
+  /// In en, this message translates to:
+  /// **'Timetable'**
+  String get examTimetable;
+
+  /// No description provided for @examResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get examResult;
+
+  /// No description provided for @noTimetable.
+  ///
+  /// In en, this message translates to:
+  /// **'No timetable available'**
+  String get noTimetable;
+
+  /// No description provided for @noResult.
+  ///
+  /// In en, this message translates to:
+  /// **'No results available'**
+  String get noResult;
+
+  /// No description provided for @outOf.
+  ///
+  /// In en, this message translates to:
+  /// **'OUT OF'**
+  String get outOf;
+
+  /// No description provided for @remark.
+  ///
+  /// In en, this message translates to:
+  /// **'Remark'**
+  String get remark;
+
+  /// No description provided for @mark.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark'**
+  String get mark;
+
+  /// No description provided for @rank.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get rank;
+
+  /// No description provided for @total.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get total;
+
+  /// No description provided for @percentage.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage'**
+  String get percentage;
+
+  /// No description provided for @result.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get result;
+
+  /// No description provided for @session.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get session;
+
+  /// No description provided for @menuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menuTitle;
+
+  /// No description provided for @announcements.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get announcements;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
