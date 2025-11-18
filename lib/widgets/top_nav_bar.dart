@@ -5,9 +5,8 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   final String language;
   final VoidCallback onSwitch;
   final VoidCallback? onProfileTap;
-  final VoidCallback onLogout;
   final VoidCallback onTranslate;
-  final VoidCallback onToggleTheme; // ADDED
+  final VoidCallback onToggleTheme;
   final bool showProfileButton;
 
   const TopNavBar({
@@ -16,9 +15,8 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     required this.language,
     required this.onSwitch,
     this.onProfileTap,
-    required this.onLogout,
     required this.onTranslate,
-    required this.onToggleTheme, // ADDED
+    required this.onToggleTheme,
     this.showProfileButton = true,
   });
 
@@ -30,69 +28,66 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: cs.primary,
       elevation: 0,
-      leading: showProfileButton
-          ? GestureDetector(
-              onTap: onProfileTap,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.home, color: cs.primary),
-                ),
-              ),
-            )
-          : null,
-      title: Text(
-        studentName,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      actions: [
-        // SWITCH USER
-        IconButton(
-          icon: const Icon(Icons.swap_horiz, color: Colors.white),
-          tooltip: 'Switch User',
-          onPressed: onSwitch,
-        ),
 
-        // LANGUAGE TOGGLE (A <-> த)
+      // LEFT SIDE
+      leadingWidth: 120,
+      leading: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          if (showProfileButton)
+            IconButton(
+              onPressed: onProfileTap,
+              icon: Icon(Icons.home, color: Colors.white),
+            ),
+          IconButton(
+            onPressed: onSwitch,
+            icon: Icon(Icons.swap_horiz, color: Colors.white),
+          ),
+        ],
+      ),
+
+      // CENTER
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          return Text(
+            studentName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: constraints.maxWidth > 150 ? 20 : 16,
+            ),
+          );
+        },
+      ),
+      centerTitle: true,
+
+      // RIGHT SIDE
+      actions: [
+        IconButton(
+          icon: Icon(
+            brightness == Brightness.light ? Icons.dark_mode : Icons.light_mode,
+            color: Colors.white,
+          ),
+          onPressed: onToggleTheme,
+        ),
         IconButton(
           icon: Text(
             language == 'ta' ? 'A' : 'த',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
               fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
-          tooltip: 'Translate',
           onPressed: onTranslate,
-        ),
-
-        // THEME SWITCHER (Light / Dark / System)
-        IconButton(
-          icon: Icon(
-            brightness == Brightness.light
-                ? Icons.dark_mode // currently light → show dark mode icon
-                : Icons.light_mode, // currently dark → show light mode icon
-            color: Colors.white,
-          ),
-          tooltip: 'Toggle Theme',
-          onPressed: onToggleTheme,
-        ),
-
-        // LOGOUT
-        IconButton(
-          icon: const Icon(Icons.logout, color: Colors.white),
-          tooltip: 'Logout',
-          onPressed: onLogout,
         ),
       ],
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(kToolbarHeight);
 }

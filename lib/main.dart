@@ -699,7 +699,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           language: Hive.box('settings').get('language', defaultValue: 'en'),
           onSwitch: _showUserSwitcher,
           onProfileTap: () => _onNavigate(0),
-          onLogout: _logoutUser,
+          // onLogout: _logoutUser,
           onTranslate: widget.onToggleLanguage,
           onToggleTheme: widget.onToggleTheme, // ADDED
         ),
