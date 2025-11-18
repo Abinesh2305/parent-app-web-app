@@ -147,7 +147,9 @@
 "noTimetable": "No timetable available",
 
 "menuTitle": "Menu",
-"announcements": "Announcements"
+"announcements": "Announcements",
+
+"logout": "Logout"
 
 
 }

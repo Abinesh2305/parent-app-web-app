@@ -382,4 +382,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get announcements => 'அறிவிப்புகள்';
+
+  @override
+  String get logout => 'வெளியேறு';
 }

@@ -7,7 +7,9 @@ import '../screens/leave_screen.dart';
 import '../screens/profile_screen.dart';
 
 class MenuScreen extends StatelessWidget {
-  const MenuScreen({super.key});
+  final VoidCallback onLogout;
+
+  const MenuScreen({super.key, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +33,11 @@ class MenuScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 0.78, // more height
+            childAspectRatio: 0.78,
           ),
           itemCount: menuItems.length,
           itemBuilder: (context, index) {
@@ -50,7 +52,7 @@ class MenuScreen extends StatelessWidget {
                   case var label when label == t.profile:
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const ProfileScreen(),
+                        builder: (_) => ProfileScreen(onLogout: onLogout),
                       ),
                     );
                     break;
@@ -154,10 +156,8 @@ class MenuScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 36, color: colorScheme.primary),
               const SizedBox(height: 8),
-
-              // WRAP text fully (NO overflow, NO ellipsis)
               SizedBox(
-                width: double.infinity, // allows full wrapping
+                width: double.infinity,
                 child: Text(
                   label,
                   textAlign: TextAlign.center,

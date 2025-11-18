@@ -382,4 +382,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get announcements => 'Announcements';
+
+  @override
+  String get logout => 'Logout';
 }

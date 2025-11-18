@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
+import '../main.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback onLogout;
+
+  const ProfileScreen({super.key, required this.onLogout});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -84,6 +87,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
                     _buildAlternateMobileForm(colorScheme, t),
+                    SizedBox(height: 24),
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 16),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade600,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        onPressed: widget.onLogout,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.logout, size: 22),
+                            const SizedBox(width: 8),
+                            Text(
+                              t.logout,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

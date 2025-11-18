@@ -670,7 +670,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // index 0 (default)
       const HomeworkScreen(), // index 1
       const NotificationScreen(), // index 2
-      const MenuScreen(), // index 3
+      MenuScreen(onLogout: _logoutUser), // index 3
       const AttendanceScreen(), // index 4
       const FeesScreen(), // index 5
       const LeaveScreen(), // 6
