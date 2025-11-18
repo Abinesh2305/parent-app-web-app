@@ -22,7 +22,7 @@ class AuthService {
         },
       );
 
-      print("✅ API Response: ${response.data}");
+      print("API Response: ${response.data}");
 
       if (response.data["status"] == 1) {
         var user = response.data["data"];
@@ -47,6 +47,15 @@ class AuthService {
               .subscribeToTopic("Scholar_${user["id"]}");
           await FirebaseMessaging.instance
               .subscribeToTopic("Section_${className}_$section");
+
+          final groups = user["groups"] ?? [];
+          for (var g in groups) {
+            final gid = g["id"];
+            if (gid != null) {
+              await FirebaseMessaging.instance.subscribeToTopic("Group_$gid");
+              print("Subscribed to Group_$gid");
+            }
+          }
         }
 
         return {"success": true, "user": user};

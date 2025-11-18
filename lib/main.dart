@@ -50,7 +50,9 @@ Future<void> main() async {
   );
 
   // Local notification setup
-  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const androidSettings =
+      AndroidInitializationSettings('@drawable/notification_icon');
+
   const initSettings = InitializationSettings(android: androidSettings);
 
   await flutterLocalNotificationsPlugin.initialize(
@@ -336,7 +338,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         'High Importance Notifications',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/notification_icon',
       );
 
       const platformDetails = NotificationDetails(android: androidDetails);
@@ -387,6 +389,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final mainUser = box.get('user');
       List<dynamic> linkedUsers = box.get('linked_users', defaultValue: []);
 
+      await FirebaseMessaging.instance.deleteToken();
+      final newToken = await FirebaseMessaging.instance.getToken();
+      print("NEW TOKEN: $newToken");
+
       if (linkedUsers.isEmpty) {
         final fetched = await UserService().getMobileScholars();
         linkedUsers = fetched;
@@ -404,13 +410,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final uniqueUsers = {for (var s in allUsers) s['id']: s}.values.toList();
 
       for (var s in uniqueUsers) {
+        print("USER DETAILS: ${s['userdetails']}");
         final schoolId = s['school_college_id'];
         final scholarId = s['id'];
+        final sectionId = s['userdetails']['section_id'];
+        final groupId = s['userdetails']['group_code'];
+
         if (schoolId != null) {
           await fcm.subscribeToTopic("School_Scholars_$schoolId");
         }
         if (scholarId != null) {
           await fcm.subscribeToTopic("Scholar_$scholarId");
+        }
+        if (sectionId != null) {
+          await fcm.subscribeToTopic("Section_$sectionId");
+        }
+
+        if (groupId != null) {
+          print("Subscribing to Group_$groupId");
+          await fcm.subscribeToTopic("Group_$groupId");
         }
       }
     } catch (e) {
