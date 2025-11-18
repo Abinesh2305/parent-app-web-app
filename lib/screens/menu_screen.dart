@@ -5,6 +5,7 @@ import '../main.dart' show MainNavigationScreen;
 import '../screens/exam_screen.dart';
 import '../screens/leave_screen.dart';
 import '../screens/profile_screen.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class MenuScreen extends StatelessWidget {
   final VoidCallback onLogout;
@@ -18,14 +19,14 @@ class MenuScreen extends StatelessWidget {
 
     final List<Map<String, dynamic>> menuItems = [
       {'icon': Icons.person_outline, 'label': t.profile},
-      {'icon': Icons.campaign_outlined, 'label': t.announcements},
+      {'icon': Icons.notifications_none, 'label': t.notifications},
       {'icon': Icons.calendar_today_outlined, 'label': t.leaveManagement},
       {'icon': Icons.fact_check_outlined, 'label': t.exams},
       {'icon': Icons.currency_rupee, 'label': t.fees},
       {'icon': Icons.book_outlined, 'label': t.homework},
-      {'icon': Icons.how_to_reg_outlined, 'label': t.attendance},
+      {'icon': Icons.calendar_month, 'label': t.attendance},
     ];
-
+    final isTamil = Localizations.localeOf(context).languageCode == 'ta';
     return Scaffold(
       appBar: AppBar(
         title: Text(t.menuTitle),
@@ -33,11 +34,11 @@ class MenuScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 0.78,
+            childAspectRatio: isTamil ? 0.63 : 0.85,
           ),
           itemCount: menuItems.length,
           itemBuilder: (context, index) {
@@ -47,6 +48,7 @@ class MenuScreen extends StatelessWidget {
               icon: item['icon'],
               label: item['label'],
               colorScheme: cs,
+              isTamil: isTamil,
               onTap: () {
                 switch (item['label']) {
                   case var label when label == t.profile:
@@ -142,10 +144,14 @@ class MenuScreen extends StatelessWidget {
     required IconData icon,
     required String label,
     required ColorScheme colorScheme,
+    required bool isTamil,
     required VoidCallback onTap,
   }) {
     return Card(
       elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -156,15 +162,22 @@ class MenuScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 36, color: colorScheme.primary),
               const SizedBox(height: 8),
+
+              // Auto-size text to avoid clipping
               SizedBox(
                 width: double.infinity,
-                child: Text(
+                child: AutoSizeText(
                   label,
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  minFontSize: isTamil ? 9 : 11,
+                  maxFontSize: isTamil ? 12 : 14,
+                  wrapWords: false,
+                  stepGranularity: 1,
                   style: TextStyle(
-                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
+                    height: 1.15,
                   ),
                 ),
               ),
