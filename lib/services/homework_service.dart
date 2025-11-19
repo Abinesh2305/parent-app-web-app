@@ -53,6 +53,11 @@ class HomeworkService {
             "attachments": (map["is_file_attachments"] ?? [])
                 .map((a) => a["img"].toString())
                 .toList(),
+
+            // new fields from backend
+            "read_status": map["read_status"] ?? "UNREAD",
+            "ack_status": map["ack_status"] ?? "PENDING",
+            "ack_required": map["ack_required"] ?? 0,
           };
         }).toList();
       }
@@ -62,6 +67,8 @@ class HomeworkService {
       throw Exception("Network error: ${response.statusCode}");
     }
   }
+
+
 
   /// Get homeworks over a date range (like last N days)
   Future<List<dynamic>> getHomeworksWithDate({
@@ -118,32 +125,37 @@ class HomeworkService {
       throw Exception("Network error: ${response.statusCode}");
     }
   }
+  
 
-  /// Acknowledge a homework (mark as viewed)
-  Future<void> acknowledgeHomework(int hwId) async {
+  Future<void> markAsRead(int homeworkId) async {
     final box = Hive.box('settings');
     final user = box.get('user');
     final token = box.get('token');
 
-    if (user == null || token == null) {
-      throw Exception("User not logged in");
-    }
-
-    final body = {
-      "user_id": user['id'],
-      "api_token": token,
-      "hw_id": hwId,
-    };
-
-    final response = await _dio.post(
-      'posthomeworkacknowledge',
-      data: body,
-      options: Options(headers: {'x-api-key': token}),
+    await _dio.post(
+      "homework-read",
+      data: {
+        "user_id": user['id'],
+        "school_id": user['school_college_id'],
+        "homework_id": homeworkId,
+      },
+      options: Options(headers: {"x-api-key": token}),
     );
+  }
 
-    if (!(response.statusCode == 200 && response.data['status'] == 1)) {
-      throw Exception(
-          response.data['message'] ?? "Failed to acknowledge homework");
-    }
+  Future<void> acknowledge(int homeworkId) async {
+    final box = Hive.box('settings');
+    final user = box.get('user');
+    final token = box.get('token');
+
+    await _dio.post(
+      "homework-ack",
+      data: {
+        "user_id": user['id'],
+        "school_id": user['school_college_id'],
+        "homework_id": homeworkId,
+      },
+      options: Options(headers: {"x-api-key": token}),
+    );
   }
 }

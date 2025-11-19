@@ -41,14 +41,19 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     try {
       final data = await _service.getHomeworks(date: _selectedDate);
       setState(() => _homeworks = data);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading homeworks: $e")),
-        );
+
+      // auto mark all visible homeworks as read
+      for (final hw in data) {
+        if (hw["read_status"] == "UNREAD") {
+          _service.markAsRead(hw["id"]);
+        }
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading homeworks: $e")),
+      );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      setState(() => _loading = false);
     }
   }
 
