@@ -20,6 +20,7 @@ import 'screens/homework_screen.dart';
 import 'screens/fees_screen.dart';
 import 'screens/leave_screen.dart';
 import 'services/force_update_service.dart';
+import 'dart:convert';
 
 // Global navigator key for navigation even when app is not in foreground
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -58,8 +59,11 @@ Future<void> main() async {
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) async {
-      if (response.payload == 'open_notifications') {
-        await _handleUserAndNavigate(null);
+      if (response.payload != null) {
+        final data = jsonDecode(response.payload!);
+        final fakeMessage =
+            RemoteMessage(data: Map<String, dynamic>.from(data));
+        await _handleUserAndNavigate(fakeMessage);
       }
     },
   );
@@ -76,12 +80,16 @@ Future<void> main() async {
 /// Shared logic to switch user and open notification tab
 Future<void> _handleUserAndNavigate(RemoteMessage? message) async {
   final box = Hive.box('settings');
-  final targetUserId = message?.data['target_user_id'];
 
+  final targetUserId = message?.data['target_user_id'];
+  final postId = message?.data['post_id'];
+
+  // Switch account if required
   if (targetUserId != null) {
     final linkedUsers = box.get('linked_users', defaultValue: []);
     final mainUser = box.get('user');
     List<dynamic> allUsers = [];
+
     if (mainUser != null) allUsers.add(mainUser);
     allUsers.addAll(linkedUsers);
 
@@ -91,13 +99,22 @@ Future<void> _handleUserAndNavigate(RemoteMessage? message) async {
     );
 
     if (targetUser != null) {
-      // store token first to prevent watcher from firing with missing token
       await box.put('token', targetUser['api_token']);
       await box.put('user', targetUser);
-      print("Auto-switched to user: ${targetUser['name']}");
-    } else {
-      print("⚠️ Target user not found locally.");
     }
+  }
+
+  // Decide where to navigate
+  bool openHomework = false;
+  bool openNotification = false;
+
+  final msgType = message?.data['type']?.toString();
+  final navigate = message?.data['navigate']?.toString();
+
+  if (msgType == "5" || navigate == "homework") {
+    openHomework = true;
+  } else {
+    openNotification = true;
   }
 
   navigatorKey.currentState?.pushAndRemoveUntil(
@@ -105,7 +122,8 @@ Future<void> _handleUserAndNavigate(RemoteMessage? message) async {
       builder: (_) => MainNavigationScreen(
         onToggleTheme: () {},
         onToggleLanguage: () {},
-        openNotificationTab: true,
+        openHomeworkTab: openHomework,
+        openNotificationTab: openNotification,
       ),
     ),
     (route) => false,
@@ -348,7 +366,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         displayTitle,
         body,
         platformDetails,
-        payload: 'open_notifications',
+        payload: jsonEncode(message.data),
       );
     });
 

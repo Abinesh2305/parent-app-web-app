@@ -1,7 +1,7 @@
 name: school_dashboard
 description: A professional school parent Flutter application
 publish_to: 'none'
-version: 3.1.8+20
+version: 3.1.9+21
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
