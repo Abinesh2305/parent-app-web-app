@@ -88,19 +88,57 @@ Future<void> _handleUserAndNavigate(RemoteMessage? message) async {
   if (targetUserId != null) {
     final linkedUsers = box.get('linked_users', defaultValue: []);
     final mainUser = box.get('user');
-    List<dynamic> allUsers = [];
 
+    List<dynamic> allUsers = [];
     if (mainUser != null) allUsers.add(mainUser);
     allUsers.addAll(linkedUsers);
 
-    final targetUser = allUsers.firstWhere(
+    // 1. Try to find user locally
+    var targetUser = allUsers.firstWhere(
       (u) => u['id'].toString() == targetUserId.toString(),
       orElse: () => null,
     );
 
+    // 2. If not found -> fetch from server
+    if (targetUserId != null) {
+      final linkedUsers = box.get('linked_users', defaultValue: []);
+      final mainUser = box.get('user');
+
+      List<dynamic> allUsers = [];
+      if (mainUser != null) allUsers.add(mainUser);
+      allUsers.addAll(linkedUsers);
+
+      print("ALL USERS = ${allUsers.map((u) => u['id']).toList()}");
+      print("TARGET USER = $targetUserId");
+
+      var targetUser = allUsers.firstWhere(
+        (u) => u['id'].toString() == targetUserId.toString(),
+        orElse: () => null,
+      );
+
+      if (targetUser == null) {
+        print("TARGET NOT FOUND. Cannot switch.");
+      } else {
+        await box.put('token', targetUser['api_token']);
+        await box.put('user', targetUser);
+
+        await navigatorKey.currentState?.context
+            .findAncestorStateOfType<_MainNavigationScreenState>()
+            ?.resetFcmSubscriptions();
+
+        print("SWITCHED TO USER ${targetUser['id']}");
+      }
+    }
+
+    // 3. If still null -> cannot switch
     if (targetUser != null) {
       await box.put('token', targetUser['api_token']);
       await box.put('user', targetUser);
+
+      // Refresh FCM topics
+      await navigatorKey.currentState?.context
+          .findAncestorStateOfType<_MainNavigationScreenState>()
+          ?.resetFcmSubscriptions();
     }
   }
 
@@ -317,7 +355,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     // ForceUpdateService.checkForUpdate(); // Google Force Update
 
-    _subscribeToAllScholarTopics();
+    // _subscribeToAllScholarTopics();
+
+    resetFcmSubscriptions();
 
     if (widget.openNotificationTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -346,8 +386,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final senderName = message.data['sender_name'] ?? '';
-      final title = message.notification?.title ?? 'Notification';
-      final body = message.notification?.body ?? '';
+      final title = message.data['title'] ?? 'Notification';
+      final body = message.data['body'] ?? '';
       final displayTitle =
           senderName.isNotEmpty ? "$senderName – $title" : title;
 
@@ -400,57 +440,41 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _handleUserAndNavigate(message);
   }
 
-  Future<void> _subscribeToAllScholarTopics() async {
-    try {
-      final fcm = FirebaseMessaging.instance;
-      final box = Hive.box('settings');
-      final mainUser = box.get('user');
-      List<dynamic> linkedUsers = box.get('linked_users', defaultValue: []);
+  Future<void> resetFcmSubscriptions() async {
+    final fcm = FirebaseMessaging.instance;
 
-      // await FirebaseMessaging.instance.deleteToken();
-      // final newToken = await FirebaseMessaging.instance.getToken();
-      // print("NEW TOKEN: $newToken");
+    final box = Hive.box('settings');
+    final mainUser = box.get('user');
+    List<dynamic> linkedUsers = box.get('linked_users', defaultValue: []);
 
-      if (linkedUsers.isEmpty) {
-        final fetched = await UserService().getMobileScholars();
-        linkedUsers = fetched;
-        await box.put('linked_users', linkedUsers);
-      }
+    final allUsers = <Map<String, dynamic>>[];
+    if (mainUser != null) allUsers.add(mainUser);
+    for (var u in linkedUsers) {
+      if (u is Map<String, dynamic>) allUsers.add(u);
+    }
 
-      final allUsers = <Map<String, dynamic>>[];
-      if (mainUser != null && mainUser is Map<String, dynamic>) {
-        allUsers.add(mainUser);
-      }
-      for (var u in linkedUsers) {
-        if (u is Map<String, dynamic>) allUsers.add(u);
-      }
+    final uniqueUsers = {for (var u in allUsers) u['id']: u}.values.toList();
 
-      final uniqueUsers = {for (var s in allUsers) s['id']: s}.values.toList();
+    // Unsubscribe everything first
+    final schoolId = mainUser['school_college_id'];
+    await fcm.unsubscribeFromTopic("School_Scholars_$schoolId");
 
-      for (var s in uniqueUsers) {
-        print("USER DETAILS: ${s['userdetails']}");
-        final schoolId = s['school_college_id'];
-        final scholarId = s['id'];
-        final sectionId = s['userdetails']['section_id'];
-        final groupId = s['userdetails']['group_code'];
+    for (var u in uniqueUsers) {
+      await fcm.unsubscribeFromTopic("Scholar_${u['id']}");
+      await fcm
+          .unsubscribeFromTopic("Section_${u['userdetails']['section_id']}");
+      await fcm.unsubscribeFromTopic("Group_${u['userdetails']['group_code']}");
+    }
 
-        if (schoolId != null) {
-          await fcm.subscribeToTopic("School_Scholars_$schoolId");
-        }
-        if (scholarId != null) {
-          await fcm.subscribeToTopic("Scholar_$scholarId");
-        }
-        if (sectionId != null) {
-          await fcm.subscribeToTopic("Section_$sectionId");
-        }
+    // Subscribe clean once
+    if (schoolId != null) {
+      await fcm.subscribeToTopic("School_Scholars_$schoolId");
+    }
 
-        if (groupId != null) {
-          print("Subscribing to Group_$groupId");
-          await fcm.subscribeToTopic("Group_$groupId");
-        }
-      }
-    } catch (e) {
-      print("Error subscribing to topics: $e");
+    for (var u in uniqueUsers) {
+      await fcm.subscribeToTopic("Scholar_${u['id']}");
+      await fcm.subscribeToTopic("Section_${u['userdetails']['section_id']}");
+      await fcm.subscribeToTopic("Group_${u['userdetails']['group_code']}");
     }
   }
 
@@ -625,7 +649,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                     content: Text("Switched to ${s['name']}")),
                               );
 
-                              _subscribeToAllScholarTopics();
+                              resetFcmSubscriptions();
                             },
                             title: Text(s['name'] ?? "Unknown"),
                             subtitle: Text(

@@ -45,7 +45,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       // auto mark all visible homeworks as read
       for (final hw in data) {
         if (hw["read_status"] == "UNREAD") {
-          _service.markAsRead(hw["id"]);
+          await _service.markAsRead(hw["main_ref_no"]);
         }
       }
     } catch (e) {
@@ -82,72 +82,42 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   }
 
   Future<void> _downloadFile(BuildContext context, String url) async {
-    final t = AppLocalizations.of(context)!;
-
     try {
-      if (Platform.isAndroid) {
-        int sdkInt =
-            int.tryParse(Platform.version.split('(').first.trim()) ?? 33;
-
-        if (sdkInt >= 33) {
-          Map<Permission, PermissionStatus> statuses = await [
-            Permission.photos,
-            Permission.videos,
-            Permission.audio,
-          ].request();
-
-          if (statuses.values.any((status) => status.isDenied)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(t.mediaPermissionReq)),
-            );
-            return;
-          }
-        } else {
-          var status = await Permission.storage.status;
-          if (!status.isGranted) {
-            status = await Permission.storage.request();
-            if (!status.isGranted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(t.storagePermissionReq)),
-              );
-              return;
-            }
-          }
-        }
-      }
-
       Directory? dir;
+
       if (Platform.isAndroid) {
+        // Android private folder (no permission required)
         dir = await getExternalStorageDirectory();
       } else {
+        // iOS private folder
         dir = await getApplicationDocumentsDirectory();
       }
 
       if (dir == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.cannotAccessFolder)),
+          const SnackBar(content: Text("Cannot access storage")),
         );
         return;
       }
 
       final fileName = url.split('/').last;
       final filePath = "${dir.path}/$fileName";
-      final dio = Dio();
 
+      final dio = Dio();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${t.downloading} $fileName...")),
+        SnackBar(content: Text("Downloading $fileName...")),
       );
 
       await dio.download(url, filePath);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${t.savedTo}: ${dir.path}")),
+        SnackBar(content: Text("Saved in: ${dir.path}")),
       );
 
       await OpenFilex.open(filePath);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${t.downloadFailed}: $e")),
+        SnackBar(content: Text("Download failed: $e")),
       );
     }
   }
@@ -314,8 +284,8 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                           onPressed: () async {
                                             for (final hw in _homeworks) {
                                               if (hw["ack_required"] == 1) {
-                                                await _service
-                                                    .acknowledge(hw["id"]);
+                                                await _service.acknowledge(
+                                                    hw["main_ref_no"]);
                                               }
                                             }
                                             _loadHomeworks(); // refresh UI

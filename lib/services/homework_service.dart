@@ -8,6 +8,7 @@ class HomeworkService {
   /// Fetch homework list for a given date (defaults to today)
   Future<List<dynamic>> getHomeworks({DateTime? date}) async {
     final box = Hive.box('settings');
+    print("USER -> ${box.get('user')}");
     final user = box.get('user');
     final token = box.get('token');
 
@@ -45,7 +46,8 @@ class HomeworkService {
         return list.map((hw) {
           final map = Map<String, dynamic>.from(hw);
           return {
-            "id": map["main_ref_no"],
+            "id": map["id"],
+            "main_ref_no": map["main_ref_no"],
             "subject": map["is_subject_name"] ?? "",
             "description": map["hw_description"] ?? "",
             "date": map["is_hw_date"] ?? "",
@@ -124,7 +126,7 @@ class HomeworkService {
     }
   }
 
-  Future<void> markAsRead(int homeworkId) async {
+  Future<void> markAsRead(String homeworkRef) async {
     final box = Hive.box('settings');
     final user = box.get('user');
     final token = box.get('token');
@@ -134,25 +136,34 @@ class HomeworkService {
       data: {
         "user_id": user['id'],
         "school_id": user['school_college_id'],
-        "homework_id": homeworkId,
+        "homework_id": homeworkRef,
       },
       options: Options(headers: {"x-api-key": token}),
     );
   }
 
-  Future<void> acknowledge(int homeworkId) async {
+  Future<void> acknowledge(String homeworkRef) async {
     final box = Hive.box('settings');
     final user = box.get('user');
     final token = box.get('token');
 
-    await _dio.post(
-      "admin/homework-ack",
+    final userId = user['id']; // correct user_id
+    final schoolId = user['userdetails']?['school_id']; // correct school_id
+
+    print("ACK API CALL => homework_id: $homeworkRef");
+    print("Sending user_id => $userId");
+    print("Sending school_id => $schoolId");
+
+    final res = await _dio.post(
+      "homework-ack",
       data: {
-        "user_id": user['id'],
-        "school_id": user['school_college_id'],
-        "homework_id": homeworkId,
+        "user_id": userId,
+        "school_id": schoolId,
+        "homework_id": homeworkRef,
       },
       options: Options(headers: {"x-api-key": token}),
     );
+
+    print("ACK RESPONSE => ${res.data}");
   }
 }
