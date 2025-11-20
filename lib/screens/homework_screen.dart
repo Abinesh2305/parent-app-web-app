@@ -159,6 +159,13 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     final allAttachments = _collectAllAttachments();
     final t = AppLocalizations.of(context)!;
 
+    final bool anyRequiresAck = _homeworks.any((h) => h["ack_required"] == 1);
+
+    final bool allAckDone = _homeworks.isNotEmpty &&
+        _homeworks
+            .where((h) => h["ack_required"] == 1)
+            .every((h) => h["ack_status"] == "ACKNOWLEDGED");
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: Padding(
@@ -250,16 +257,27 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
 
                                     // Table rows
                                     ..._homeworks.map((hw) {
+                                      final bool ackRequired =
+                                          hw["ack_required"] == 1;
+                                      final String ackStatus =
+                                          hw["ack_status"] ?? "PENDING";
+
                                       return TableRow(
                                         children: [
                                           Padding(
                                             padding: const EdgeInsets.all(8.0),
-                                            child: Text(hw['subject'] ?? ''),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(hw['subject'] ?? ''),
+                                              ],
+                                            ),
                                           ),
                                           Padding(
                                             padding: const EdgeInsets.all(8.0),
-                                            child: Text(hw['description'] ??
-                                                t.noDetails),
+                                            child:
+                                                Text(hw['description'] ?? ''),
                                           ),
                                         ],
                                       );
@@ -268,6 +286,43 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
+
+// Common Acknowledge button for the entire homework group
+                              if (anyRequiresAck)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: allAckDone
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 10, horizontal: 14),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.green.withOpacity(0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            "Acknowledged",
+                                            style: TextStyle(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        )
+                                      : ElevatedButton(
+                                          onPressed: () async {
+                                            for (final hw in _homeworks) {
+                                              if (hw["ack_required"] == 1) {
+                                                await _service
+                                                    .acknowledge(hw["id"]);
+                                              }
+                                            }
+                                            _loadHomeworks(); // refresh UI
+                                          },
+                                          child: Text("Acknowledge"),
+                                        ),
+                                ),
 
                               // Show attachments together
                               if (allAttachments.isNotEmpty)

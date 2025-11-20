@@ -34,7 +34,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
   final box = await Hive.openBox('settings');
-  box.put('pending_fcm', message.data); // store only data
+  // box.put('pending_fcm', message.data); // store only data
 }
 
 Future<void> main() async {
@@ -313,7 +313,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
 
-    _checkPendingFCM();
+    // _checkPendingFCM();
 
     // ForceUpdateService.checkForUpdate(); // Google Force Update
 
@@ -374,18 +374,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _checkInitialMessage();
   }
 
-  Future<void> _checkPendingFCM() async {
-    final box = Hive.box('settings');
-    final data = box.get('pending_fcm');
+  // Future<void> _checkPendingFCM() async {
+  //   final box = Hive.box('settings');
+  //   final data = box.get('pending_fcm');
 
-    if (data != null) {
-      box.delete('pending_fcm');
+  //   if (data != null) {
+  //     box.delete('pending_fcm');
 
-      await _handleUserAndNavigate(
-        RemoteMessage(data: Map<String, dynamic>.from(data)),
-      );
-    }
-  }
+  //     await _handleUserAndNavigate(
+  //       RemoteMessage(data: Map<String, dynamic>.from(data)),
+  //     );
+  //   }
+  // }
 
   Future<void> _checkInitialMessage() async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -407,9 +407,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final mainUser = box.get('user');
       List<dynamic> linkedUsers = box.get('linked_users', defaultValue: []);
 
-      await FirebaseMessaging.instance.deleteToken();
-      final newToken = await FirebaseMessaging.instance.getToken();
-      print("NEW TOKEN: $newToken");
+      // await FirebaseMessaging.instance.deleteToken();
+      // final newToken = await FirebaseMessaging.instance.getToken();
+      // print("NEW TOKEN: $newToken");
 
       if (linkedUsers.isEmpty) {
         final fetched = await UserService().getMobileScholars();

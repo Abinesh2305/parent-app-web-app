@@ -45,7 +45,7 @@ class HomeworkService {
         return list.map((hw) {
           final map = Map<String, dynamic>.from(hw);
           return {
-            "id": map["id"],
+            "id": map["main_ref_no"],
             "subject": map["is_subject_name"] ?? "",
             "description": map["hw_description"] ?? "",
             "date": map["is_hw_date"] ?? "",
@@ -68,8 +68,6 @@ class HomeworkService {
     }
   }
 
-
-
   /// Get homeworks over a date range (like last N days)
   Future<List<dynamic>> getHomeworksWithDate({
     required DateTime date,
@@ -87,7 +85,7 @@ class HomeworkService {
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
     final body = {
-      "user_id": user['id'],
+      "user_id": user['main_ref_no'],
       "api_token": token,
       "date": formattedDate,
       "cnt": days,
@@ -125,7 +123,6 @@ class HomeworkService {
       throw Exception("Network error: ${response.statusCode}");
     }
   }
-  
 
   Future<void> markAsRead(int homeworkId) async {
     final box = Hive.box('settings');
@@ -149,7 +146,7 @@ class HomeworkService {
     final token = box.get('token');
 
     await _dio.post(
-      "homework-ack",
+      "admin/homework-ack",
       data: {
         "user_id": user['id'],
         "school_id": user['school_college_id'],
