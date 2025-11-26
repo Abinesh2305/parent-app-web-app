@@ -36,8 +36,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     });
   }
 
-  
-
   Future<void> _loadHomeworks() async {
     setState(() => _loading = true);
     try {
@@ -137,7 +135,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       );
     }
   }
-  
 
   @override
   Widget build(BuildContext context) {
