@@ -445,4 +445,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noContacts => 'No contacts available';
+
+  @override
+  String get ok => 'Ok';
 }

@@ -36,6 +36,8 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     });
   }
 
+  
+
   Future<void> _loadHomeworks() async {
     setState(() => _loading = true);
     try {
@@ -54,6 +56,20 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       );
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openDatePicker() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() => _selectedDate = picked);
+      _loadHomeworks();
     }
   }
 
@@ -121,6 +137,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       );
     }
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -143,29 +160,33 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
         child: Column(
           children: [
             // Date navigation
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => _changeDate(false),
-                ),
-                Icon(Icons.calendar_today, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  formattedDate,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+            GestureDetector(
+              onTap: _openDatePicker,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => _changeDate(false),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => _changeDate(true),
-                ),
-              ],
+                  Icon(Icons.calendar_today, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    formattedDate,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () => _changeDate(true),
+                  ),
+                ],
+              ),
             ),
+
             const SizedBox(height: 16),
 
             // Content

@@ -445,4 +445,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get noContacts => 'தொடர்புகள் கிடைக்கவில்லை';
+
+  @override
+  String get ok => 'சரி';
 }

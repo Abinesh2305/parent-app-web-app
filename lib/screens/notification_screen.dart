@@ -656,6 +656,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                     "#007BFF";
 
                                 final bgImage = n['post_theme']?['is_image'];
+                                final hasBgImage = bgImage != null &&
+                                    bgImage.toString().isNotEmpty;
+
                                 final tagColor = _hexToColor(textColorHex);
                                 final postCreatedAgo =
                                     n['is_notify_datetime'] ?? '';
@@ -810,18 +813,32 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           const SizedBox(height: 12),
 
                                           // Message area
-                                          // Message area
                                           Container(
                                             width: double.infinity,
-                                            height:
-                                                340, // increased height for larger messages and visible background
+                                            height: 340,
                                             decoration: BoxDecoration(
-                                              color: colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withOpacity(0.3),
                                               borderRadius:
                                                   BorderRadius.circular(10),
-                                              image: bgImage != null
+                                              // If backend gives a background image, use it.
+                                              // Otherwise use a rainbow gradient.
+                                              color: hasBgImage
+                                                  ? null
+                                                  : Colors.transparent,
+                                              gradient: hasBgImage
+                                                  ? null
+                                                  : const LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                      colors: [
+                                                        Color(0xFFFF9A9E),
+                                                        Color(0xFFFAD0C4),
+                                                        Color(0xFFFBC2EB),
+                                                        Color(0xFFA18CD1),
+                                                        Color(0xFFFDFBFB),
+                                                      ],
+                                                    ),
+                                              image: hasBgImage
                                                   ? DecorationImage(
                                                       image:
                                                           NetworkImage(bgImage),
@@ -833,10 +850,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                             ),
                                             child: Padding(
                                               padding: EdgeInsets.fromLTRB(
-                                                  16,
-                                                  bgImage != null ? 100 : 16,
-                                                  16,
-                                                  16), // top padding for bg text
+                                                16,
+                                                hasBgImage ? 100 : 16,
+                                                16,
+                                                16,
+                                              ),
                                               child: Column(
                                                 children: [
                                                   Expanded(
@@ -850,7 +868,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                             TextAlign.center,
                                                         text:
                                                             _buildHighlightedText(
-                                                                message),
+                                                          message,
+                                                          isDark
+                                                              ? Colors.white
+                                                              : Colors.black,
+                                                          isDark
+                                                              ? Colors
+                                                                  .yellowAccent
+                                                              : colorScheme
+                                                                  .primary,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
@@ -863,7 +890,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           MainAxisSize.min,
                                                       children: [
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.volume_up),
                                                           onPressed: () =>
                                                               _readAloud(
@@ -871,15 +898,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           tooltip: "Start",
                                                         ),
                                                         IconButton(
-                                                          icon:
-                                                              Icon(Icons.pause),
+                                                          icon: const Icon(
+                                                              Icons.pause),
                                                           onPressed: _isSpeaking
                                                               ? _pauseReading
                                                               : null,
                                                           tooltip: "Pause",
                                                         ),
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.play_arrow),
                                                           onPressed: _isPaused
                                                               ? _resumeReading
@@ -887,8 +914,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           tooltip: "Resume",
                                                         ),
                                                         IconButton(
-                                                          icon:
-                                                              Icon(Icons.stop),
+                                                          icon: const Icon(
+                                                              Icons.stop),
                                                           onPressed:
                                                               _isSpeaking ||
                                                                       _isPaused
@@ -897,7 +924,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           tooltip: "Stop",
                                                         ),
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.refresh),
                                                           onPressed:
                                                               _currentReadText
@@ -1340,7 +1367,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
-  TextSpan _buildHighlightedText(String fullText) {
+  TextSpan _buildHighlightedText(
+    String fullText,
+    Color normalColor,
+    Color highlightColor,
+  ) {
     final words = fullText.split(" ");
 
     return TextSpan(
@@ -1354,7 +1385,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             fontSize: 15,
             height: 1.5,
             fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            color: isActive ? Colors.blue : Colors.black,
+            color: isActive ? highlightColor : normalColor,
           ),
         );
       }).toList(),
