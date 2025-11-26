@@ -305,7 +305,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ),
             const SizedBox(height: 16),
             _buildSummaryCard(t, cs),
-            const SizedBox(height: 16),
             _buildSelectedDayInfo(t, cs),
           ],
         ),
@@ -498,49 +497,79 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final status = _statusMap[key];
     final desc = _descriptionMap[key];
 
-    // Show only Leave & Holiday
     if (status != "Leave" && status != "Holiday") {
       return const SizedBox.shrink();
     }
 
     final dateLabel = DateFormat('dd MMM yyyy').format(_selectedDay!);
-
     final isLeave = status == "Leave";
     final label = isLeave ? t.leave : t.holiday;
 
     return Card(
-      elevation: 2,
+      elevation: 3,
       color: cs.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              dateLabel,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: cs.onSurface,
+            // Date (centered cleaner look)
+            // Text(
+            //   dateLabel,
+            //   style: TextStyle(
+            //     fontSize: 17,
+            //     fontWeight: FontWeight.w700,
+            //     color: cs.primary,
+            //   ),
+            //   textAlign: TextAlign.center,
+            // ),
+
+            // const SizedBox(height: 16),
+
+            // Center Badge
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
+              decoration: BoxDecoration(
+                color: cs.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(50),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: cs.primary,
-              ),
-            ),
-            if (desc != null && desc.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                desc,
+              child: Text(
+                label,
                 style: TextStyle(
-                  fontSize: 13,
-                  color: cs.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.primary,
+                ),
+              ),
+            ),
+
+            if (desc != null && desc.isNotEmpty) ...[
+              const SizedBox(height: 22),
+
+              // Align description section to full width left
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "${t.reason}:",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: cs.onSurface,
+                  ),
                 ),
               ),
             ],
