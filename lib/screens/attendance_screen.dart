@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/services/attendance_service.dart';
@@ -13,13 +14,18 @@ class AttendanceScreen extends StatefulWidget {
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  Map<DateTime, String> _attendanceMap = {};
-  List<Map<String, dynamic>> _leaveDetails = [];
+  DateTime? _selectedDay = DateTime.now();
+
+  Map<DateTime, String> _statusMap = {};
+  Map<DateTime, String> _descriptionMap = {};
+
   int totalDays = 0;
+  int absentDays = 0;
   int leaveDays = 0;
   int presentDays = 0;
+
   double attendancePercentage = 0.0;
+
   bool _isLoading = true;
 
   final AttendanceService _attendanceService = AttendanceService();
@@ -35,13 +41,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       }
 
       settingsBox = Hive.box('settings');
-      _loadAttendance();
+      await _loadAttendance();
 
       settingsBox.watch(key: 'user').listen((event) async {
         await Future.delayed(const Duration(milliseconds: 200));
         if (mounted) _loadAttendance();
       });
     });
+  }
+
+  DateTime _normalizeDate(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  DateTime? _parseDateSafe(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      return _normalizeDate(DateTime.parse(value));
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _loadAttendance() async {
@@ -53,14 +70,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
       if (user == null || token == null) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No active user found")),
-        );
         return;
       }
 
       final monthYear =
           "${_focusedDay.year}-${_focusedDay.month.toString().padLeft(2, '0')}";
+
       final data = await _attendanceService.getAttendance(monthYear);
 
       if (data == null) {
@@ -68,59 +83,109 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         return;
       }
 
-      final presentDates = List<String>.from(data['student_present_approved']);
-      final leaveDates = List<String>.from(data['student_leaves']);
-      final holidays = List<Map<String, dynamic>>.from(data['holidays']);
-      final leaveList =
-          List<Map<String, dynamic>>.from(data['student_leaves_list']);
+      final presentDates =
+          (data['student_present_approved'] as List?)?.cast<dynamic>() ??
+              <dynamic>[];
 
-      final Map<DateTime, String> map = {};
+      // FIXED: CORRECT ABSENT KEY
+      final absentDates =
+          (data['student_absents'] as List?)?.cast<dynamic>() ?? <dynamic>[];
 
-      for (var date in presentDates) {
-        map[DateTime.parse(date)] = 'Present';
-      }
-      for (var date in leaveDates) {
-        map[DateTime.parse(date)] = 'Leave';
-      }
-      for (var h in holidays) {
-        map[DateTime.parse(h['holiday_date'])] = 'Holiday';
+      final holidaysRaw =
+          (data['holidays'] as List?)?.cast<dynamic>() ?? <dynamic>[];
+
+      final approvedLeaveDetailsRaw =
+          (data['approved_leave_details'] as List?)?.cast<dynamic>() ??
+              <dynamic>[];
+
+      final Map<DateTime, String> statusMap = {};
+      final Map<DateTime, String> descMap = {};
+
+      for (final item in approvedLeaveDetailsRaw) {
+        if (item is! Map) continue;
+        final d = _parseDateSafe(item['date']?.toString());
+        if (d == null) continue;
+
+        final reason = item['reason']?.toString() ?? '';
+        statusMap[d] = 'Leave';
+        if (reason.isNotEmpty) descMap[d] = reason;
       }
 
-      final details = leaveList.map((item) {
-        return {
-          "date": item["leave_date"] ?? "",
-          "reason": item["leave_reason"] ?? "-",
-        };
-      }).toList();
+      for (final item in holidaysRaw) {
+        if (item is! Map) continue;
+
+        final d = _parseDateSafe(item['holiday_date']?.toString());
+        if (d == null) continue;
+
+        final desc = item['holiday_description']?.toString() ?? '';
+
+        if (statusMap[d] != 'Leave') {
+          statusMap[d] = 'Holiday';
+          if (desc.isNotEmpty && !descMap.containsKey(d)) {
+            descMap[d] = desc;
+          }
+        }
+      }
+
+      for (final v in presentDates) {
+        final d = _parseDateSafe(v.toString());
+        if (d == null) continue;
+
+        if (!statusMap.containsKey(d)) {
+          statusMap[d] = 'Present';
+        }
+      }
+
+      for (final v in absentDates) {
+        final d = _parseDateSafe(v.toString());
+        if (d == null) continue;
+
+        if (!statusMap.containsKey(d)) {
+          statusMap[d] = 'Absent';
+        }
+      }
+
+      final workingDays = data['noof_working_days'] ?? 0;
+      final absCount = data['student_absent_count'] ?? 0;
+      final presCount = data['present_days'] ?? 0;
+      final leaveCount = data['student_leave_count'] ?? 0;
+
+      final attPct = double.tryParse(data['att_percentage'].toString()) ?? 0.0;
 
       if (!mounted) return;
 
       setState(() {
-        _attendanceMap = map;
-        _leaveDetails = details;
-        totalDays = data['noof_working_days'] ?? 0;
-        leaveDays = data['student_leaves_count'] ?? 0;
-        presentDays = data['present_days'] ?? 0;
-        attendancePercentage =
-            double.tryParse(data['att_percentage'].toString()) ?? 0.0;
+        _statusMap = statusMap;
+        _descriptionMap = descMap;
+
+        totalDays = workingDays;
+        absentDays = absCount;
+        presentDays = presCount;
+        leaveDays = leaveCount;
+        attendancePercentage = attPct;
+
+        if (_selectedDay == null ||
+            _selectedDay!.year != _focusedDay.year ||
+            _selectedDay!.month != _focusedDay.month) {
+          _selectedDay = _focusedDay;
+        }
+
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to load attendance: $e")),
-      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final t = AppLocalizations.of(context)!;
-    final localeCode = Localizations.localeOf(context).languageCode;
-    final calendarLocale = localeCode == 'ta' ? 'ta_IN' : 'en_US';
+
+    final locale = Localizations.localeOf(context).languageCode;
+    final calendarLocale = locale == 'ta' ? 'ta_IN' : 'en_US';
 
     if (_isLoading) {
       return const Scaffold(
@@ -128,396 +193,273 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       );
     }
 
-    Color backgroundCard = isDark
-        ? colorScheme.surfaceContainerHighest.withOpacity(0.4)
-        : Colors.white;
+    final backgroundCard =
+        isDark ? cs.surfaceContainerHighest.withOpacity(0.3) : Colors.white;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: cs.surface,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // CALENDAR
             Card(
               color: backgroundCard,
               elevation: 3,
               shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: TableCalendar(
-                locale: calendarLocale,
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                calendarFormat: CalendarFormat.month,
-                onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-                },
-                onPageChanged: (focusedDay) {
-                setState(() {
-                  _focusedDay = focusedDay;
-                  _isLoading = true;
-                });
-                _loadAttendance();
-                },
-                headerStyle: HeaderStyle(
-                titleCentered: true,
-                formatButtonVisible: false,
-                titleTextStyle: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-                leftChevronIcon:
-                  Icon(Icons.chevron_left, color: colorScheme.primary),
-                rightChevronIcon:
-                  Icon(Icons.chevron_right, color: colorScheme.primary),
-                ),
-                // disable default selected/today decorations so our builders control visuals
-                calendarStyle: CalendarStyle(
-                selectedDecoration: BoxDecoration(color: Colors.transparent),
-                todayDecoration: BoxDecoration(color: Colors.transparent),
-                ),
-                calendarBuilders: CalendarBuilders(
-                // Default day builder that paints the status background
-                defaultBuilder: (context, date, _) {
-                  final dayKey = DateTime(date.year, date.month, date.day);
-                  final status = _attendanceMap[dayKey];
-
-                  Color? bgColor;
-                  Color textColor = isDark ? Colors.white70 : Colors.black87;
-
-                  switch (status) {
-                  case 'Present':
-                    bgColor = isDark
-                      ? Colors.green.shade900.withOpacity(0.6)
-                      : Colors.green.shade100;
-                    textColor = isDark
-                      ? Colors.greenAccent.shade100
-                      : Colors.green.shade900;
-                    break;
-                  case 'Leave':
-                    bgColor = isDark
-                      ? Colors.orange.shade900.withOpacity(0.6)
-                      : Colors.orange.shade100;
-                    textColor = isDark
-                      ? Colors.orangeAccent.shade100
-                      : Colors.orange.shade900;
-                    break;
-                  case 'Holiday':
-                    bgColor = isDark
-                      ? Colors.blue.shade900.withOpacity(0.6)
-                      : Colors.blue.shade100;
-                    textColor = isDark
-                      ? Colors.blueAccent.shade100
-                      : Colors.blue.shade900;
-                    break;
-                  default:
-                    bgColor = isDark
-                      ? Colors.grey.shade800
-                      : Colors.grey.shade300;
-                    textColor = isDark ? Colors.white70 : Colors.black87;
-                  }
-
-                  return Container(
-                  margin: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    "${date.day}",
-                    style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                    ),
-                  ),
-                  );
-                },
-                // Selected day: show status background but add a visible ring (so the status color is not hidden)
-                selectedBuilder: (context, date, _) {
-                  final dayKey = DateTime(date.year, date.month, date.day);
-                  final status = _attendanceMap[dayKey];
-
-                  Color? bgColor;
-                  Color textColor = isDark ? Colors.white70 : Colors.black87;
-
-                  switch (status) {
-                  case 'Present':
-                    bgColor = isDark
-                      ? Colors.green.shade900.withOpacity(0.6)
-                      : Colors.green.shade100;
-                    textColor = isDark
-                      ? Colors.greenAccent.shade100
-                      : Colors.green.shade900;
-                    break;
-                  case 'Leave':
-                    bgColor = isDark
-                      ? Colors.orange.shade900.withOpacity(0.6)
-                      : Colors.orange.shade100;
-                    textColor = isDark
-                      ? Colors.orangeAccent.shade100
-                      : Colors.orange.shade900;
-                    break;
-                  case 'Holiday':
-                    bgColor = isDark
-                      ? Colors.blue.shade900.withOpacity(0.6)
-                      : Colors.blue.shade100;
-                    textColor = isDark
-                      ? Colors.blueAccent.shade100
-                      : Colors.blue.shade900;
-                    break;
-                  default:
-                    bgColor = isDark
-                      ? Colors.grey.shade800
-                      : Colors.grey.shade300;
-                    textColor = isDark ? Colors.white70 : Colors.black87;
-                  }
-
-                  return Container(
-                  margin: const EdgeInsets.all(4),
-                  alignment: Alignment.center,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                    // status colored circle (keeps status visible)
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                      color: bgColor,
-                      shape: BoxShape.circle,
-                      ),
-                    ),
-                    // outer ring to indicate selection (uses primary color and is semi-transparent)
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.95),
-                        width: 2.2,
-                      ),
-                      ),
-                    ),
-                    Text(
-                      "${date.day}",
-                      style: TextStyle(
-                      fontSize: 14,
+                padding: const EdgeInsets.all(12),
+                child: TableCalendar(
+                  locale: calendarLocale,
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay,
+                  selectedDayPredicate: (day) =>
+                      _selectedDay != null && isSameDay(_selectedDay, day),
+                  calendarFormat: CalendarFormat.month,
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                    });
+                  },
+                  onPageChanged: (focusedDay) {
+                    setState(() {
+                      _focusedDay = focusedDay;
+                      _isLoading = true;
+                    });
+                    _loadAttendance();
+                  },
+                  headerStyle: HeaderStyle(
+                    titleCentered: true,
+                    formatButtonVisible: false,
+                    titleTextStyle: TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: textColor,
-                      ),
+                      color: cs.onSurface,
                     ),
-                    ],
+                    leftChevronIcon:
+                        Icon(Icons.chevron_left, color: cs.primary),
+                    rightChevronIcon:
+                        Icon(Icons.chevron_right, color: cs.primary),
                   ),
-                  );
-                },
-                // Today: ensure status color is visible and indicate "today" with a subtle dot/ring
-                todayBuilder: (context, date, _) {
-                  final dayKey = DateTime(date.year, date.month, date.day);
-                  final status = _attendanceMap[dayKey];
-
-                  Color? bgColor;
-                  Color textColor = isDark ? Colors.white70 : Colors.black87;
-
-                  switch (status) {
-                  case 'Present':
-                    bgColor = isDark
-                      ? Colors.green.shade900.withOpacity(0.6)
-                      : Colors.green.shade100;
-                    textColor = isDark
-                      ? Colors.greenAccent.shade100
-                      : Colors.green.shade900;
-                    break;
-                  case 'Leave':
-                    bgColor = isDark
-                      ? Colors.orange.shade900.withOpacity(0.6)
-                      : Colors.orange.shade100;
-                    textColor = isDark
-                      ? Colors.orangeAccent.shade100
-                      : Colors.orange.shade900;
-                    break;
-                  case 'Holiday':
-                    bgColor = isDark
-                      ? Colors.blue.shade900.withOpacity(0.6)
-                      : Colors.blue.shade100;
-                    textColor = isDark
-                      ? Colors.blueAccent.shade100
-                      : Colors.blue.shade900;
-                    break;
-                  default:
-                    bgColor = isDark
-                      ? Colors.grey.shade800
-                      : Colors.grey.shade300;
-                    textColor = isDark ? Colors.white70 : Colors.black87;
-                  }
-
-                  return Container(
-                  margin: const EdgeInsets.all(4),
-                  alignment: Alignment.center,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                    // status colored circle
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                      color: bgColor,
-                      shape: BoxShape.circle,
-                      ),
-                    ),
-                    // subtle inner dot indicating today (so it doesn't cover status)
-                    Positioned(
-                      bottom: 6,
-                      child: Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      ),
-                    ),
-                    Text(
-                      "${date.day}",
-                      style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                      ),
-                    ),
-                    ],
+                  calendarStyle: const CalendarStyle(
+                    selectedDecoration:
+                        BoxDecoration(color: Colors.transparent),
+                    todayDecoration: BoxDecoration(color: Colors.transparent),
+                    outsideDaysVisible: false,
                   ),
-                  );
-                },
+                  calendarBuilders: CalendarBuilders(
+                    defaultBuilder: (context, date, _) {
+                      return _buildCalendarCell(context, date, isDark);
+                    },
+                    selectedBuilder: (context, date, _) {
+                      return _buildCalendarCell(
+                        context,
+                        date,
+                        isDark,
+                        selected: true,
+                      );
+                    },
+                    todayBuilder: (context, date, _) {
+                      final isSelected =
+                          _selectedDay != null && isSameDay(_selectedDay, date);
+                      return _buildCalendarCell(
+                        context,
+                        date,
+                        isDark,
+                        selected: isSelected,
+                        today: true,
+                      );
+                    },
+                  ),
                 ),
-              ),
               ),
             ),
-
-            // LEGEND (localized)
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildLegendItem(
-                  color: isDark
-                      ? Colors.green.shade900.withOpacity(0.6)
-                      : Colors.green.shade100,
+                _legendItem(
                   label: t.present,
-                  textColor: isDark
-                      ? Colors.greenAccent.shade100
-                      : Colors.green.shade900,
+                  color: Colors.green.shade300,
+                  textColor: Colors.green.shade900,
                 ),
-                _buildLegendItem(
-                  color: isDark
-                      ? Colors.orange.shade900.withOpacity(0.6)
-                      : Colors.orange.shade100,
+                _legendItem(
                   label: t.absent,
-                  textColor: isDark
-                      ? Colors.orangeAccent.shade100
-                      : Colors.orange.shade900,
+                  color: Colors.red.shade300,
+                  textColor: Colors.red.shade900,
                 ),
-                _buildLegendItem(
-                  color: isDark
-                      ? Colors.blue.shade900.withOpacity(0.6)
-                      : Colors.blue.shade100,
-                  label: t.holiday,
-                  textColor: isDark
-                      ? Colors.blueAccent.shade100
-                      : Colors.blue.shade900,
-                ),
-                _buildLegendItem(
-                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                _legendItem(
                   label: t.leave,
-                  textColor: isDark ? Colors.white70 : Colors.black87,
+                  color: Colors.orange.shade300,
+                  textColor: Colors.orange.shade900,
+                ),
+                _legendItem(
+                  label: t.holiday,
+                  color: Colors.blue.shade300,
+                  textColor: Colors.blue.shade900,
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            _buildSummaryCard(t, cs),
+            const SizedBox(height: 16),
+            _buildSelectedDayInfo(t, cs),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // LEAVE DETAILS
-            // Text(
-            //   t.leaveDetails,
-            //   style: TextStyle(
-            //     fontSize: 16,
-            //     fontWeight: FontWeight.bold,
-            //     color: colorScheme.onSurface,
-            //   ),
-            // ),
-            // const SizedBox(height: 8),
-            // Card(
-            //   color: backgroundCard,
-            //   elevation: 2,
-            //   shape: RoundedRectangleBorder(
-            //     borderRadius: BorderRadius.circular(12),
-            //   ),
-            //   child: DataTable(
-            //     headingRowColor: MaterialStateProperty.all(
-            //         colorScheme.primary.withOpacity(0.1)),
-            //     dataTextStyle: TextStyle(color: colorScheme.onSurface),
-            //     columns: [
-            //       DataColumn(label: Text(t.dateLabel)),
-            //       DataColumn(label: Text(t.reasonLabel)),
-            //     ],
-            //     rows: _leaveDetails
-            //         .map(
-            //           (item) => DataRow(
-            //             cells: [
-            //               DataCell(Text(item["date"] ?? "")),
-            //               DataCell(Text(item["reason"] ?? "")),
-            //             ],
-            //           ),
-            //         )
-            //         .toList(),
-            //   ),
-            // ),
+  Widget _buildCalendarCell(
+    BuildContext context,
+    DateTime date,
+    bool isDark, {
+    bool selected = false,
+    bool today = false,
+  }) {
+    final cs = Theme.of(context).colorScheme;
 
-            const SizedBox(height: 24),
+    final key = _normalizeDate(date);
+    final status = _statusMap[key];
 
-            // SUMMARY
-            Text(
-              t.summary,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+    Color bg;
+    Color textColor;
+
+    switch (status) {
+      case "Present":
+        bg = isDark ? Colors.green.shade900 : Colors.green.shade100;
+        textColor = isDark ? Colors.green.shade200 : Colors.green.shade900;
+        break;
+      case "Absent":
+        bg = isDark ? Colors.red.shade900 : Colors.red.shade100;
+        textColor = isDark ? Colors.red.shade200 : Colors.red.shade900;
+        break;
+      case "Leave":
+        bg = isDark ? Colors.orange.shade900 : Colors.orange.shade100;
+        textColor = isDark ? Colors.orange.shade200 : Colors.orange.shade900;
+        break;
+      case "Holiday":
+        bg = isDark ? Colors.blue.shade900 : Colors.blue.shade100;
+        textColor = isDark ? Colors.blue.shade200 : Colors.blue.shade900;
+        break;
+      default:
+        bg = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+        textColor = isDark ? Colors.white70 : Colors.black87;
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      alignment: Alignment.center,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Selected border
+          if (selected)
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: cs.primary, width: 2),
               ),
             ),
-            const SizedBox(height: 8),
-            Card(
-              color: backgroundCard,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildSummaryItem(
-                        t.workingDays, totalDays.toString(), Colors.blue),
-                    _buildSummaryItem(
-                        t.leaves, leaveDays.toString(), Colors.orange),
-                    _buildSummaryItem(
-                        t.attendancePercentage,
-                        "${attendancePercentage.toStringAsFixed(1)}%",
-                        Colors.green),
-                  ],
+
+          // Background circle
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: bg,
+              shape: BoxShape.circle,
+            ),
+          ),
+
+          // Today dot (layer under text but visible)
+          if (today)
+            Positioned(
+              bottom: 5,
+              child: Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  // Use white in dark mode for contrast
+                  color: isDark ? Colors.white : cs.primary,
                 ),
+              ),
+            ),
+
+          // Date text ABOVE everything
+          Positioned(
+            top: 8,
+            child: Text(
+              "${date.day}",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _legendItem({
+    required String label,
+    required Color color,
+    required Color textColor,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard(AppLocalizations t, ColorScheme cs) {
+    return Card(
+      elevation: 3,
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _summaryItem(
+                t.workingDays, totalDays.toString(), Colors.blue.shade700),
+            _summaryItem(t.absent, absentDays.toString(), Colors.red.shade700),
+            _summaryItem(t.leave, leaveDays.toString(), Colors.orange.shade700),
+            _summaryItem(
+                t.present, presentDays.toString(), Colors.green.shade700),
+            Flexible(
+              child: _summaryItem(
+                t.attendancePercentage,
+                "${attendancePercentage.toStringAsFixed(1)}%",
+                Colors.teal.shade700,
               ),
             ),
           ],
@@ -526,48 +468,85 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, Color color) {
+  Widget _summaryItem(String label, String value, Color color) {
     return Column(
       children: [
         Text(
           value,
           style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: color),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildLegendItem({
-    required Color color,
-    required String label,
-    required Color textColor,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+  Widget _buildSelectedDayInfo(AppLocalizations t, ColorScheme cs) {
+    if (_selectedDay == null) return const SizedBox.shrink();
+
+    final key = _normalizeDate(_selectedDay!);
+    final status = _statusMap[key];
+    final desc = _descriptionMap[key];
+
+    // Show only Leave & Holiday
+    if (status != "Leave" && status != "Holiday") {
+      return const SizedBox.shrink();
+    }
+
+    final dateLabel = DateFormat('dd MMM yyyy').format(_selectedDay!);
+
+    final isLeave = status == "Leave";
+    final label = isLeave ? t.leave : t.holiday;
+
+    return Card(
+      elevation: 2,
+      color: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              dateLabel,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: cs.primary,
+              ),
+            ),
+            if (desc != null && desc.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: textColor,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

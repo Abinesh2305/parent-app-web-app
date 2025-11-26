@@ -6,6 +6,11 @@ import '../screens/exam_screen.dart';
 import '../screens/leave_screen.dart';
 import '../screens/profile_screen.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import '../screens/placeholder_screen.dart';
+import '../screens/survey_screen.dart';
+import '../screens/gallery_screen.dart';
+import '../screens/rewards_screen.dart';
+import '../screens/contacts_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   final VoidCallback onLogout;
@@ -16,17 +21,54 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
+    final isTamil = Localizations.localeOf(context).languageCode == 'ta';
 
     final List<Map<String, dynamic>> menuItems = [
-      {'icon': Icons.person_outline, 'label': t.profile},
-      {'icon': Icons.notifications_none, 'label': t.notifications},
-      {'icon': Icons.calendar_today_outlined, 'label': t.leaveManagement},
-      {'icon': Icons.fact_check_outlined, 'label': t.exams},
-      {'icon': Icons.currency_rupee, 'label': t.fees},
-      {'icon': Icons.book_outlined, 'label': t.homework},
-      {'icon': Icons.calendar_month, 'label': t.attendance},
+      {'icon': Icons.person_outline, 'label': t.profile, 'action': 'profile'},
+      {
+        'icon': Icons.notifications_none,
+        'label': t.notifications,
+        'action': 'notifications'
+      },
+      {
+        'icon': Icons.calendar_today_outlined,
+        'label': t.leaveManagement,
+        'action': 'leave'
+      },
+      {'icon': Icons.fact_check_outlined, 'label': t.exams, 'action': 'exams'},
+      {'icon': Icons.currency_rupee, 'label': t.fees, 'action': 'fees'},
+      {'icon': Icons.book_outlined, 'label': t.homework, 'action': 'homework'},
+      {
+        'icon': Icons.calendar_month,
+        'label': t.attendance,
+        'action': 'attendance'
+      },
+
+      // New Menus
+      {'icon': Icons.poll_outlined, 'label': t.survey, 'action': 'survey'},
+      {
+        'icon': Icons.photo_library_outlined,
+        'label': t.gallery,
+        'action': 'gallery'
+      },
+      {
+        'icon': Icons.workspace_premium_outlined,
+        'label': t.rewards,
+        'action': 'rewards'
+      },
+
+      {
+        'icon': Icons.event_note_outlined,
+        'label': t.events,
+        'action': 'events'
+      },
+      {
+        'icon': Icons.contact_phone_outlined,
+        'label': t.schoolContacts,
+        'action': 'contacts'
+      },
     ];
-    final isTamil = Localizations.localeOf(context).languageCode == 'ta';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(t.menuTitle),
@@ -49,95 +91,139 @@ class MenuScreen extends StatelessWidget {
               label: item['label'],
               colorScheme: cs,
               isTamil: isTamil,
-              onTap: () {
-                switch (item['label']) {
-                  case var label when label == t.profile:
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ProfileScreen(onLogout: onLogout),
-                      ),
-                    );
-                    break;
-
-                  case var label when label == t.announcements:
-                    navigatorKey.currentState?.pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => MainNavigationScreen(
-                          onToggleTheme: () {},
-                          onToggleLanguage: () {},
-                          openNotificationTab: true,
-                        ),
-                      ),
-                      (route) => false,
-                    );
-                    break;
-
-                  case var label when label == t.leaveManagement:
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const LeaveScreen(),
-                      ),
-                    );
-                    break;
-
-                  case var label when label == t.exams:
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ExamScreen(),
-                      ),
-                    );
-                    break;
-
-                  case var label when label == t.fees:
-                    navigatorKey.currentState?.pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => MainNavigationScreen(
-                          onToggleTheme: () {},
-                          onToggleLanguage: () {},
-                          openFeesTab: true,
-                        ),
-                      ),
-                      (route) => false,
-                    );
-                    break;
-
-                  case var label when label == t.homework:
-                    navigatorKey.currentState?.pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => MainNavigationScreen(
-                          onToggleTheme: () {},
-                          onToggleLanguage: () {},
-                          openHomeworkTab: true,
-                        ),
-                      ),
-                      (route) => false,
-                    );
-                    break;
-
-                  case var label when label == t.attendance:
-                    navigatorKey.currentState?.pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => MainNavigationScreen(
-                          onToggleTheme: () {},
-                          onToggleLanguage: () {},
-                          openAttendanceTab: true,
-                        ),
-                      ),
-                      (route) => false,
-                    );
-                    break;
-
-                  default:
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(item['label'])),
-                    );
-                }
-              },
+              onTap: () => _handleMenuAction(context, item['action'], t),
             );
           },
         ),
       ),
     );
+  }
+
+  void _handleMenuAction(
+      BuildContext context, String action, AppLocalizations t) {
+    switch (action) {
+      case 'profile':
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(onLogout: onLogout),
+          ),
+        );
+        break;
+
+      case 'notifications':
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => MainNavigationScreen(
+              onToggleTheme: () {},
+              onToggleLanguage: () {},
+              openNotificationTab: true,
+            ),
+          ),
+          (route) => false,
+        );
+        break;
+
+      case 'leave':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LeaveScreen()),
+        );
+        break;
+
+      case 'exams':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ExamScreen()),
+        );
+        break;
+
+      case 'fees':
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => MainNavigationScreen(
+              onToggleTheme: () {},
+              onToggleLanguage: () {},
+              openFeesTab: true,
+            ),
+          ),
+          (route) => false,
+        );
+        break;
+
+      case 'homework':
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => MainNavigationScreen(
+              onToggleTheme: () {},
+              onToggleLanguage: () {},
+              openHomeworkTab: true,
+            ),
+          ),
+          (route) => false,
+        );
+        break;
+
+      case 'attendance':
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => MainNavigationScreen(
+              onToggleTheme: () {},
+              onToggleLanguage: () {},
+              openAttendanceTab: true,
+            ),
+          ),
+          (route) => false,
+        );
+        break;
+
+      // --------------------- NEW PAGES ---------------------
+
+      case 'survey':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SurveyScreen()),
+        );
+        break;
+
+      case 'gallery':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const GalleryScreen()),
+        );
+        break;
+
+      case 'rewards':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RewardsScreen()),
+        );
+        break;
+
+      case 'timetable':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => const PlaceholderScreen(title: "Time Table")),
+        );
+        break;
+
+      case 'events':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => const PlaceholderScreen(title: "Events")),
+        );
+        break;
+
+      case 'contacts':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ContactsScreen()),
+        );
+        break;
+
+      // ------------------------------------------------------
+    }
   }
 
   Widget _buildMenuItem({
@@ -162,8 +248,6 @@ class MenuScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 36, color: colorScheme.primary),
               const SizedBox(height: 8),
-
-              // Auto-size text to avoid clipping
               SizedBox(
                 width: double.infinity,
                 child: AutoSizeText(

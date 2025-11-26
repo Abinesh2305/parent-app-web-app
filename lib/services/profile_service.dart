@@ -102,4 +102,37 @@ class ProfileService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> changePassword(String newPassword) async {
+    try {
+      final box = Hive.box('settings');
+      final user = box.get('user');
+      final token = box.get('token');
+      if (user == null || token == null) throw Exception('User not logged in');
+
+      final res = await _dio.post(
+        'profile_change_password',
+        data: {
+          'user_id': user['id'],
+          'api_token': token,
+          'new_password': newPassword,
+        },
+        options: Options(headers: {'x-api-key': token}),
+      );
+
+      // Update Hive user + token if API sends refreshed data
+      if (res.data != null &&
+          res.data['status'] == 1 &&
+          res.data['data'] != null) {
+        final updatedUser = res.data['data'];
+        await box.put('user', updatedUser);
+        await box.put('token', updatedUser['api_token']);
+      }
+
+      return res.data;
+    } catch (e) {
+      print('⚠️ changePassword error: $e');
+      return null;
+    }
+  }
 }

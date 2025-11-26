@@ -4,6 +4,8 @@ import 'package:school_dashboard/l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
 import 'forgot_password_screen.dart';
+import 'change_password_screen.dart';
+import 'package:school_dashboard/services/home_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -55,12 +57,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => isLoading = false);
 
+    if (response['forcePasswordChange'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChangePasswordScreen(
+            userId: response['userId'],
+            apiToken: response['apiToken'],
+          ),
+        ),
+      );
+      return;
+    }
+
     if (response['success']) {
       if (rememberMe) {
         var box = Hive.box('settings');
         box.put('saved_email', emailController.text);
         box.put('saved_password', passwordController.text);
       }
+
+      // IMPORTANT: Sync topics + save topics_subscribed in DB
+      await HomeService.syncHomeContents();
 
       Navigator.pushReplacement(
         context,

@@ -104,7 +104,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:
-  /// **'Notifications'**
+  /// **'Notice Board'**
   String get notifications;
 
   /// No description provided for @menu.
@@ -190,6 +190,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave Details'**
   String get leaveDetails;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
 
   /// No description provided for @summary.
   ///
@@ -488,13 +494,13 @@ abstract class AppLocalizations {
   /// No description provided for @feeAmount.
   ///
   /// In en, this message translates to:
-  /// **'Fee Amount'**
+  /// **'Total Amount'**
   String get feeAmount;
 
   /// No description provided for @paidAmount.
   ///
   /// In en, this message translates to:
-  /// **'Paid Amount'**
+  /// **'Paid'**
   String get paidAmount;
 
   /// No description provided for @balanceAmount.
@@ -506,8 +512,14 @@ abstract class AppLocalizations {
   /// No description provided for @concessionAmount.
   ///
   /// In en, this message translates to:
-  /// **'Concession Amount'**
+  /// **'Concession'**
   String get concessionAmount;
+
+  /// No description provided for @waiverAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiver'**
+  String get waiverAmount;
 
   /// No description provided for @overdueIn.
   ///
@@ -850,6 +862,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logout'**
   String get logout;
+
+  /// No description provided for @survey.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey'**
+  String get survey;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// No description provided for @rewards.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewards / Remarks'**
+  String get rewards;
+
+  /// No description provided for @timeTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Table'**
+  String get timeTable;
+
+  /// No description provided for @events.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get events;
+
+  /// No description provided for @schoolContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'School Contacts'**
+  String get schoolContacts;
+
+  /// No description provided for @noRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No records found'**
+  String get noRecords;
+
+  /// No description provided for @surveys.
+  ///
+  /// In en, this message translates to:
+  /// **'Surveys'**
+  String get surveys;
+
+  /// No description provided for @surveyQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey Question'**
+  String get surveyQuestion;
+
+  /// No description provided for @submitSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submitSurvey;
+
+  /// No description provided for @alreadyResponded.
+  ///
+  /// In en, this message translates to:
+  /// **'Already Responded'**
+  String get alreadyResponded;
+
+  /// No description provided for @expiredSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get expiredSurvey;
+
+  /// No description provided for @option.
+  ///
+  /// In en, this message translates to:
+  /// **'Option'**
+  String get option;
+
+  /// No description provided for @noSurveys.
+  ///
+  /// In en, this message translates to:
+  /// **'No surveys found'**
+  String get noSurveys;
+
+  /// No description provided for @noGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'No gallery items found'**
+  String get noGallery;
+
+  /// No description provided for @noRewards.
+  ///
+  /// In en, this message translates to:
+  /// **'No rewards/remarks found'**
+  String get noRewards;
+
+  /// No description provided for @contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'School Contacts'**
+  String get contacts;
+
+  /// No description provided for @noContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts available'**
+  String get noContacts;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

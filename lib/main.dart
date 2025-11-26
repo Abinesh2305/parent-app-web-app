@@ -21,6 +21,9 @@ import 'screens/fees_screen.dart';
 import 'screens/leave_screen.dart';
 import 'services/force_update_service.dart';
 import 'dart:convert';
+import 'package:in_app_update/in_app_update.dart';
+import 'package:school_dashboard/services/fcm_helper.dart';
+import 'package:school_dashboard/services/home_service.dart';
 
 // Global navigator key for navigation even when app is not in foreground
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -294,19 +297,50 @@ class LaunchDecider extends StatefulWidget {
 }
 
 class _LaunchDeciderState extends State<LaunchDecider> {
+  bool waitingForUpdate = true;
+
   @override
   void initState() {
     super.initState();
+    _checkGoogleUpdate();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ForceUpdateService.checkForUpdate(); // Trigger here only
-    });
+  Future<void> _checkGoogleUpdate() async {
+    try {
+      final info = await InAppUpdate.checkForUpdate();
+
+      if (info.updateAvailability == UpdateAvailability.updateAvailable &&
+          info.immediateUpdateAllowed) {
+        // Call once only
+        final result = await InAppUpdate.performImmediateUpdate();
+
+        if (result == AppUpdateResult.success) {
+          setState(() => waitingForUpdate = false);
+        } else {
+          // If user cancels: DO NOT continue the app
+          // Keep them stuck in the update flow
+        }
+      } else {
+        // No update → continue app
+        setState(() => waitingForUpdate = false);
+      }
+    } catch (e) {
+      // If update check fails, try again after restart. Do nothing here.
+      setState(() => waitingForUpdate = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final box = Hive.box('settings');
-    return box.get('user') != null && box.get('token') != null
+    if (waitingForUpdate) {
+      // Show a loader until update process ends
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Proceed normally only if update didn't block
+    return Hive.box('settings').get('user') != null
         ? MainNavigationScreen(
             onToggleTheme: widget.onToggleTheme,
             onToggleLanguage: widget.onToggleLanguage,
@@ -441,40 +475,76 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Future<void> resetFcmSubscriptions() async {
-    final fcm = FirebaseMessaging.instance;
-
     final box = Hive.box('settings');
     final mainUser = box.get('user');
-    List<dynamic> linkedUsers = box.get('linked_users', defaultValue: []);
+    final linkedUsers = box.get('linked_users', defaultValue: []);
 
-    final allUsers = <Map<String, dynamic>>[];
-    if (mainUser != null) allUsers.add(mainUser);
-    for (var u in linkedUsers) {
-      if (u is Map<String, dynamic>) allUsers.add(u);
-    }
+    if (mainUser == null) return;
 
-    final uniqueUsers = {for (var u in allUsers) u['id']: u}.values.toList();
-
-    // Unsubscribe everything first
     final schoolId = mainUser['school_college_id'];
-    await fcm.unsubscribeFromTopic("School_Scholars_$schoolId");
 
-    for (var u in uniqueUsers) {
-      await fcm.unsubscribeFromTopic("Scholar_${u['id']}");
-      await fcm
-          .unsubscribeFromTopic("Section_${u['userdetails']['section_id']}");
-      await fcm.unsubscribeFromTopic("Group_${u['userdetails']['group_code']}");
+    // Normalize user list
+    final users = <Map<String, dynamic>>[];
+    users.add(Map<String, dynamic>.from(mainUser));
+    for (var u in linkedUsers) {
+      if (u is Map) {
+        users.add(Map<String, dynamic>.from(u));
+      }
     }
 
-    // Subscribe clean once
-    if (schoolId != null) {
-      await fcm.subscribeToTopic("School_Scholars_$schoolId");
-    }
+    // Remove duplicates by ID
+    final uniqueUsers = {for (var u in users) u['id']: u}.values.toList();
+
+    // Unsubscribe old topics
+    await FirebaseMessaging.instance
+        .unsubscribeFromTopic("School_Scholars_$schoolId");
 
     for (var u in uniqueUsers) {
-      await fcm.subscribeToTopic("Scholar_${u['id']}");
-      await fcm.subscribeToTopic("Section_${u['userdetails']['section_id']}");
-      await fcm.subscribeToTopic("Group_${u['userdetails']['group_code']}");
+      final uid = u['id'];
+
+      final details = (u['userdetails'] ?? {}) as Map;
+
+      final sectionId = details['section_id'] ??
+          details['is_section_id'] ??
+          details['is_section_name'] ??
+          0;
+
+      await FirebaseMessaging.instance.unsubscribeFromTopic("Scholar_$uid");
+      await FirebaseMessaging.instance
+          .unsubscribeFromTopic("Section_$sectionId");
+
+      final groups = u['groups'] ?? [];
+      for (var g in groups) {
+        final gid = g['id'];
+        if (gid != null) {
+          await FirebaseMessaging.instance.unsubscribeFromTopic("Group_$gid");
+        }
+      }
+    }
+
+    // Subscribe new topics
+    await safeSubscribe("School_Scholars_$schoolId");
+
+    for (var u in uniqueUsers) {
+      final uid = u['id'];
+
+      final details = (u['userdetails'] ?? {}) as Map;
+
+      final sectionId = details['section_id'] ??
+          details['is_section_id'] ??
+          details['is_section_name'] ??
+          0;
+
+      await safeSubscribe("Scholar_$uid");
+      await safeSubscribe("Section_$sectionId");
+
+      final groups = u['groups'] ?? [];
+      for (var g in groups) {
+        final gid = g['id'];
+        if (gid != null) {
+          await safeSubscribe("Group_$gid");
+        }
+      }
     }
   }
 
@@ -650,6 +720,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               );
 
                               resetFcmSubscriptions();
+                              HomeService.syncHomeContents();
                             },
                             title: Text(s['name'] ?? "Unknown"),
                             subtitle: Text(

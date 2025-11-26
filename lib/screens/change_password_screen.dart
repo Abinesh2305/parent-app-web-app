@@ -1,49 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:school_dashboard/services/reset_password_service.dart';
+import 'package:school_dashboard/services/change_password_service.dart';
 
-class ResetPasswordScreen extends StatefulWidget {
-  final String mobile;
-  final String otp;
+class ChangePasswordScreen extends StatefulWidget {
+  final int userId;
+  final String apiToken;
 
-  const ResetPasswordScreen({
+  const ChangePasswordScreen({
     super.key,
-    required this.mobile,
-    required this.otp,
+    required this.userId,
+    required this.apiToken,
   });
 
   @override
-  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController newPasswordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
-  final ResetPasswordService _resetPasswordService = ResetPasswordService();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+  final ChangePasswordService _service = ChangePasswordService();
 
   bool isPasswordVisible = false;
   bool isConfirmVisible = false;
   bool isLoading = false;
 
-  Future<void> _resetPassword() async {
-    if (newPasswordController.text.isEmpty ||
-        confirmPasswordController.text.isEmpty) {
+  Future<void> _updatePassword() async {
+    final newPass = newPasswordController.text.trim();
+    final confirmPass = confirmPasswordController.text.trim();
+
+    if (newPass.isEmpty || confirmPass.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Enter all fields")));
       return;
     }
 
-    if (newPasswordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+    if (newPass != confirmPass) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Passwords do not match")));
       return;
     }
 
     setState(() => isLoading = true);
 
-    final response = await _resetPasswordService.resetPassword(
-      mobile: widget.mobile,
-      otp: widget.otp,
-      newPassword: newPasswordController.text.trim(),
+    final response = await _service.changePassword(
+      userId: widget.userId,
+      apiToken: widget.apiToken,
+      newPassword: newPass,
     );
 
     setState(() => isLoading = false);
@@ -52,7 +55,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       SnackBar(content: Text(response['message'] ?? 'Something went wrong')),
     );
 
-    if (response['success'] == true) {
+    if (response['status'] == 1) {
       Navigator.popUntil(context, (route) => route.isFirst);
     }
   }
@@ -76,7 +79,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: colors.onSurface,
         title: const Text(
-          'Reset Password',
+          'Set New Password',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -87,32 +90,24 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Header icon
-                Icon(Icons.lock_reset, size: 80, color: colors.primary),
+                Icon(Icons.lock_outline, size: 80, color: colors.primary),
                 const SizedBox(height: 24),
-
-                // Title
                 Text(
-                  "Change Password",
+                  "Create New Password",
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colors.primary,
                   ),
                 ),
-                const SizedBox(height: 8),
-
-                // Subtitle
+                const SizedBox(height: 6),
                 Text(
-                  "Set a strong password for your account\nlinked to ${widget.mobile}",
+                  "Your app requires setting a new password for first-time login.",
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colors.onSurface.withOpacity(0.7),
-                    height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 36),
-
-                // New password field
                 TextField(
                   controller: newPasswordController,
                   obscureText: !isPasswordVisible,
@@ -140,14 +135,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             : Icons.visibility,
                         color: colors.onSurface.withOpacity(0.7),
                       ),
-                      onPressed: () =>
-                          setState(() => isPasswordVisible = !isPasswordVisible),
+                      onPressed: () => setState(
+                          () => isPasswordVisible = !isPasswordVisible),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Confirm password field
                 TextField(
                   controller: confirmPasswordController,
                   obscureText: !isConfirmVisible,
@@ -181,13 +174,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 36),
-
-                // Change password button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _resetPassword,
+                    onPressed: isLoading ? null : _updatePassword,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.primary,
                       shape: RoundedRectangleBorder(
@@ -200,12 +191,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
                               strokeWidth: 2,
+                              color: Colors.white,
                             ),
                           )
                         : const Text(
-                            'Change Password',
+                            'Update Password',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -215,12 +206,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Back to login button
                 TextButton(
-                  onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                  onPressed: () => Navigator.pop(context),
                   child: Text(
-                    "Back to Login",
+                    "Back",
                     style: TextStyle(
                       color: colors.primary,
                       fontWeight: FontWeight.w600,

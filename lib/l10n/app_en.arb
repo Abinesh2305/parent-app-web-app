@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
   "homework": "Homework",
-  "notifications": "Notifications",
+  "notifications": "Notice Board",
   "menu": "Menu",
   "attendance": "Attendance",
   "fees": "Fees",
@@ -16,6 +16,7 @@
   "leave": "Leave",
   "holiday": "Holiday",
   "leaveDetails": "Leave Details",
+  "status": "Status",
   "summary": "Summary",
   "workingDays": "Working Days",
   "leaves": "Leaves",
@@ -72,10 +73,11 @@
   "dueFees": "Due Fees",
   "pendingFees": "Pending Fees",
   "overallSummary": "Overall Summary",
-  "feeAmount": "Fee Amount",
-  "paidAmount": "Paid Amount",
+  "feeAmount": "Total Amount",
+  "paidAmount": "Paid",
   "balanceAmount": "Balance Amount",
-  "concessionAmount": "Concession Amount",
+  "concessionAmount": "Concession",
+  "waiverAmount": "Waiver",
   "overdueIn": "Overdue In",
   "dueDate": "Due Date",
   "transactions": "Transactions",
@@ -149,7 +151,36 @@
 "menuTitle": "Menu",
 "announcements": "Announcements",
 
-"logout": "Logout"
+"logout": "Logout",
 
+"survey": "Survey",
+"gallery": "Gallery",
+"rewards": "Reward / Remark",
+"timeTable": "Time Table",
+"events": "Events",
+"schoolContacts": "School Contacts",
+"noRecords": "No records found",
+
+"surveys": "Surveys",
+"surveyQuestion": "Survey Question",
+"submitSurvey": "Submit",
+"alreadyResponded": "Already Responded",
+"expiredSurvey": "Expired",
+"option": "Option",
+"noSurveys": "No surveys found",
+
+"gallery": "Gallery",
+"noGallery": "No gallery items found",
+"rewards": "Rewards / Remarks",
+"noRewards": "No rewards/remarks found",
+"contacts": "School Contacts",
+"noContacts": "No contacts available",
+
+"contacts": "School Contacts",
+"noContacts": "No contacts available",
+
+"schoolContacts": "School Contacts",
+"noContacts": "No contacts available",
+"category": "Category"
 
 }

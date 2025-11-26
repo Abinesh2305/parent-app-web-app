@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
-import '../main.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -57,6 +56,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (res?['status'] == 1) _loadProfile();
   }
 
+  // ---------------- CHANGE PASSWORD ----------------
+
+  void _showChangePasswordDialog() {
+    final pass1 = TextEditingController();
+    final pass2 = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text("Change Password"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: pass1,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "New Password"),
+              ),
+              TextField(
+                controller: pass2,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: "Confirm Password"),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              child: const Text("Save"),
+              onPressed: () async {
+                final p1 = pass1.text.trim();
+                final p2 = pass2.text.trim();
+
+                if (p1.isEmpty || p2.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Enter password")),
+                  );
+                  return;
+                }
+                if (p1 != p2) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Passwords do not match")),
+                  );
+                  return;
+                }
+
+                Navigator.pop(context);
+
+                final res = await ProfileService().changePassword(p1);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(res?['message'] ?? "Failed")),
+                );
+
+                if (res?['status'] == 1) {
+                  _loadProfile();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
@@ -75,6 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildProfileHeader(colorScheme),
                     const SizedBox(height: 16),
+
                     Card(
                       color: colorScheme.primary.withOpacity(0.1),
                       shape: RoundedRectangleBorder(
@@ -85,31 +159,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: _buildReadOnlyInfo(colorScheme, t),
                       ),
                     ),
+
                     const SizedBox(height: 24),
                     _buildAlternateMobileForm(colorScheme, t),
-                    SizedBox(height: 24),
-                    Container(
+
+                    const SizedBox(height: 24),
+
+                    // Change Password Button
+                    SizedBox(
                       width: double.infinity,
-                      margin: const EdgeInsets.only(top: 16),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _showChangePasswordDialog,
+                        child: const Text(
+                          "Change Password",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Logout Button
+                    SizedBox(
+                      width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red.shade600,
                           foregroundColor: Colors.white,
-                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         onPressed: widget.onLogout,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.logout, size: 22),
+                            const Icon(Icons.logout, size: 22),
                             const SizedBox(width: 8),
                             Text(
                               t.logout,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -133,8 +234,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       imageProvider = FileImage(_pickedImage!);
     } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
       imageProvider = NetworkImage(imageUrl);
-    } else {
-      imageProvider = null;
     }
 
     return Column(
@@ -148,22 +247,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null,
         ),
         const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // TextButton.icon(
-            //   onPressed: _pickImage,
-            //   icon: const Icon(Icons.photo_camera),
-            //   label: const Text('Change'),
-            // ),
-            // if (imageUrl != null && imageUrl.toString().isNotEmpty)
-            //   TextButton.icon(
-            //     onPressed: _deleteImage,
-            //     icon: const Icon(Icons.delete, color: Colors.red),
-            //     label: const Text('Remove'),
-            //   ),
-          ],
-        ),
       ],
     );
   }

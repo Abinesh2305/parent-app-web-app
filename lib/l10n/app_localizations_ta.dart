@@ -57,6 +57,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get leaveDetails => 'விடுப்பு விவரங்கள்';
 
   @override
+  String get status => 'நிலை';
+
+  @override
   String get summary => 'சுருக்கம்';
 
   @override
@@ -204,7 +207,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get overallSummary => 'மொத்த கட்டண சுருக்கம்';
 
   @override
-  String get feeAmount => 'கட்டண தொகை';
+  String get feeAmount => 'மொத்த தொகை';
 
   @override
   String get paidAmount => 'செலுத்திய தொகை';
@@ -214,6 +217,9 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get concessionAmount => 'தள்ளுபடி தொகை';
+
+  @override
+  String get waiverAmount => 'வெய்வர் தொகை';
 
   @override
   String get overdueIn => 'காலாவதியாகும் நாட்கள்';
@@ -385,4 +391,58 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get logout => 'வெளியேறு';
+
+  @override
+  String get survey => 'கருத்துக்கணிப்பு';
+
+  @override
+  String get gallery => 'காட்சியகம்';
+
+  @override
+  String get rewards => 'விருதுகள் / குறிப்புகள்';
+
+  @override
+  String get timeTable => 'நேர அட்டவணை';
+
+  @override
+  String get events => 'நிகழ்வுகள்';
+
+  @override
+  String get schoolContacts => 'பள்ளி தொடர்புகள்';
+
+  @override
+  String get noRecords => 'பதிவுகள் எதுவும் இல்லை';
+
+  @override
+  String get surveys => 'கருத்துக்கணிப்புகள்';
+
+  @override
+  String get surveyQuestion => 'கருத்துக்கணிப்பு கேள்வி';
+
+  @override
+  String get submitSurvey => 'சமர்ப்பிக்கவும்';
+
+  @override
+  String get alreadyResponded => 'ஏற்கனவே பதிலளிக்கப்பட்டது';
+
+  @override
+  String get expiredSurvey => 'காலாவதியானது';
+
+  @override
+  String get option => 'தேர்வு';
+
+  @override
+  String get noSurveys => 'கருத்துக்கணிப்புகள் எதுவும் இல்லை';
+
+  @override
+  String get noGallery => 'காட்சிப் பதிவுகள் இல்லை';
+
+  @override
+  String get noRewards => 'விருது/குறிப்புகள் எதுவும் இல்லை';
+
+  @override
+  String get contacts => 'பள்ளி தொடர்புகள்';
+
+  @override
+  String get noContacts => 'தொடர்புகள் கிடைக்கவில்லை';
 }

@@ -20,7 +20,7 @@ class AttendanceService {
     };
 
     final response = await _dio.post(
-      'attendance', // adjust if endpoint differs
+      'attendance',
       data: body,
       options: Options(headers: {'x-api-key': token}),
     );

@@ -25,9 +25,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
     _tabController = TabController(length: 2, vsync: this);
     _loadFees();
 
-    // Listen for user switch in Hive (just like NotificationScreen)
     settingsBox.watch(key: 'user').listen((event) async {
-      // Wait a short moment for token update to complete
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) _loadFees();
     });
@@ -41,14 +39,11 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
       final user = box.get('user');
       final token = box.get('token');
 
-      // If user switch is mid-progress, wait a bit
       if (user == null || token == null) {
-        print("User or token not ready yet. Retrying...");
         await Future.delayed(const Duration(milliseconds: 400));
         return _loadFees();
       }
 
-      // Small extra delay to let Dio interceptor refresh
       await Future.delayed(const Duration(milliseconds: 150));
 
       final summary = await FeesService().getScholarFeesPayments(_batch);
@@ -143,9 +138,10 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
               feeItem['is_category_name'] ?? 'Unknown Category';
 
           final totalAmount = item['amount'] ?? 0;
-          final balanceAmount = item['balance_amount'] ?? 0;
           final paidAmount = item['total_paid'] ?? 0;
           final concessionAmount = item['concession_amount'] ?? 0;
+          final waiverAmount = item['waiver_amount'] ?? 0;
+          final balanceAmount = item['balance_amount'] ?? 0;
           final dueDays = item['due_days'] ?? 0;
           final dueDate = item['is_due_date'] ?? '-';
 
@@ -168,48 +164,33 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(AppLocalizations.of(context)!.feeAmount + ":"),
-                      Text("₹$totalAmount",
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(AppLocalizations.of(context)!.balanceAmount + ":"),
-                      Text("₹$balanceAmount",
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(AppLocalizations.of(context)!.paidAmount + ":"),
-                      Text("₹$paidAmount",
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                          AppLocalizations.of(context)!.concessionAmount + ":"),
-                      Text("₹$concessionAmount",
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(AppLocalizations.of(context)!.overdueIn + ":"),
-                      Text("$dueDays days",
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
+
+                  // Fee Amount
+                  _row(
+                      AppLocalizations.of(context)!.feeAmount, "₹$totalAmount"),
+
+                  // Paid Amount
+                  _row(
+                      AppLocalizations.of(context)!.paidAmount, "₹$paidAmount"),
+
+                  // Concession
+                  _row(AppLocalizations.of(context)!.concessionAmount,
+                      "₹$concessionAmount"),
+
+                  // Waiver
+                  _row(AppLocalizations.of(context)!.waiverAmount,
+                      "₹$waiverAmount"),
+
+                  // Balance
+                  _row(AppLocalizations.of(context)!.balanceAmount,
+                      "₹$balanceAmount"),
+
+                  // Overdue
+                  _row(
+                      AppLocalizations.of(context)!.overdueIn, "$dueDays days"),
+
                   const Divider(height: 18),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
@@ -227,11 +208,22 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _row(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label + ":"),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
   Widget _buildTotalCard(Map total, ColorScheme colorScheme) {
     final totalAmount = total['total_amount'] ?? 0;
     final paidAmount = total['paid_amount'] ?? 0;
-    final balanceAmount = total['balance_amount'] ?? 0;
     final concessionAmount = total['concession_amount'] ?? 0;
+    final waiverAmount = total['waiver_amount'] ?? 0;
+    final balanceAmount = total['balance_amount'] ?? 0;
 
     return Card(
       color: colorScheme.primary.withOpacity(0.1),
@@ -245,59 +237,22 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Total Fees:"),
-                Text("₹$totalAmount",
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Paid Amount:"),
-                Text("₹$paidAmount",
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Balance Amount:"),
-                Text("₹$balanceAmount",
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Concession Amount:"),
-                Text("₹$concessionAmount",
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
+            _row("Total Fees", "₹$totalAmount"),
+            _row("Paid Amount", "₹$paidAmount"),
+            _row("Concession Amount", "₹$concessionAmount"),
+            _row(AppLocalizations.of(context)!.waiverAmount, "₹$waiverAmount"),
+            _row("Balance Amount", "₹$balanceAmount"),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTotalItem(String label, dynamic value) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        Text("₹${value ?? 0}",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
   Widget _buildTransactionsTab(ColorScheme colorScheme) {
     if (_transactions == null || _transactions!.isEmpty) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.noTransactionsFound));
+        child: Text(AppLocalizations.of(context)!.noTransactionsFound),
+      );
     }
 
     return RefreshIndicator(
@@ -308,7 +263,6 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
         itemBuilder: (context, index) {
           final txn = _transactions![index];
 
-          // Direct flat keys from your API response
           final categoryName = txn['name'] ?? 'Unknown Category';
           final itemName = txn['item_name'] ?? '-';
           final paymentDate = txn['is_paid_date'] ?? txn['paid_date'] ?? '-';

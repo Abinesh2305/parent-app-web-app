@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homework => 'Homework';
 
   @override
-  String get notifications => 'Notifications';
+  String get notifications => 'Notice Board';
 
   @override
   String get menu => 'Menu';
@@ -55,6 +55,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get leaveDetails => 'Leave Details';
+
+  @override
+  String get status => 'Status';
 
   @override
   String get summary => 'Summary';
@@ -204,16 +207,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overallSummary => 'Overall Summary';
 
   @override
-  String get feeAmount => 'Fee Amount';
+  String get feeAmount => 'Total Amount';
 
   @override
-  String get paidAmount => 'Paid Amount';
+  String get paidAmount => 'Paid';
 
   @override
   String get balanceAmount => 'Balance Amount';
 
   @override
-  String get concessionAmount => 'Concession Amount';
+  String get concessionAmount => 'Concession';
+
+  @override
+  String get waiverAmount => 'Waiver';
 
   @override
   String get overdueIn => 'Overdue In';
@@ -385,4 +391,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logout => 'Logout';
+
+  @override
+  String get survey => 'Survey';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get rewards => 'Rewards / Remarks';
+
+  @override
+  String get timeTable => 'Time Table';
+
+  @override
+  String get events => 'Events';
+
+  @override
+  String get schoolContacts => 'School Contacts';
+
+  @override
+  String get noRecords => 'No records found';
+
+  @override
+  String get surveys => 'Surveys';
+
+  @override
+  String get surveyQuestion => 'Survey Question';
+
+  @override
+  String get submitSurvey => 'Submit';
+
+  @override
+  String get alreadyResponded => 'Already Responded';
+
+  @override
+  String get expiredSurvey => 'Expired';
+
+  @override
+  String get option => 'Option';
+
+  @override
+  String get noSurveys => 'No surveys found';
+
+  @override
+  String get noGallery => 'No gallery items found';
+
+  @override
+  String get noRewards => 'No rewards/remarks found';
+
+  @override
+  String get contacts => 'School Contacts';
+
+  @override
+  String get noContacts => 'No contacts available';
 }

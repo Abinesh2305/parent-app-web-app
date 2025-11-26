@@ -27,6 +27,16 @@ class AuthService {
       if (response.data["status"] == 1) {
         var user = response.data["data"];
 
+        // FIRST INSTALL → DO NOT SAVE ANYTHING → GO DIRECTLY TO CHANGE PASSWORD
+        if (user["is_app_installed"] == 0) {
+          return {
+            "success": true,
+            "forcePasswordChange": true,
+            "userId": user["id"],
+            "apiToken": user["api_token"],
+          };
+        }
+
         // Save to Hive
         var box = Hive.box('settings');
         box.put("user", user);
