@@ -49,42 +49,158 @@ class _RewardsScreenState extends State<RewardsScreen> {
     }
   }
 
+  Color badgeColor(String type, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (type == "REWARD") {
+      return isDark ? Colors.green.shade800 : Colors.green.shade100;
+    } else if (type == "REMARK") {
+      return isDark ? Colors.orange.shade800 : Colors.orange.shade100;
+    } else {
+      return isDark ? Colors.red.shade800 : Colors.red.shade100;
+    }
+  }
+
+  Color badgeTextColor(String type, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (type == "REWARD") {
+      return isDark ? Colors.green.shade200 : Colors.green.shade900;
+    } else if (type == "REMARK") {
+      return isDark ? Colors.orange.shade200 : Colors.orange.shade900;
+    } else {
+      return isDark ? Colors.red.shade200 : Colors.red.shade900;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.rewards)),
+      appBar: AppBar(
+        title: Text(t.rewards),
+        backgroundColor: cs.surface,
+        elevation: 1,
+      ),
       body: loading && items.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : items.isEmpty
-              ? Center(child: Text(t.noRewards))
+              ? Center(
+                  child: Text(
+                    t.noRewards,
+                    style: TextStyle(fontSize: 16, color: cs.onSurface),
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: () => loadRewards(refresh: true),
                   child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
                     itemCount: items.length + (hasMore ? 1 : 0),
                     itemBuilder: (context, i) {
                       if (i == items.length) {
                         loadRewards();
                         return const Padding(
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(20),
                           child: Center(child: CircularProgressIndicator()),
                         );
                       }
 
                       final r = items[i];
+                      final remarkType = r['remark_type'] ?? '';
+                      final description = r['remark_description'] ?? '';
+                      final postedBy = r['posted_user']?['name'] ?? '';
+                      final createdAt = r['created_at'] ?? '';
 
-                      return Card(
-                        margin: const EdgeInsets.all(12),
-                        child: ListTile(
-                          title: Text(r['remark_type'] ?? ''),
-                          subtitle: Text(r['remark_description'] ?? ''),
-                          trailing: Text(
-                            r['created_at'] != null
-                                ? r['created_at'].toString().split(" ")[0]
-                                : "",
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? cs.surfaceVariant.withOpacity(0.35)
+                              : cs.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.outline.withOpacity(0.3),
                           ),
+                          boxShadow: [
+                            if (!isDark)
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Badge Row
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                    horizontal: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor(remarkType, context),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    remarkType,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          badgeTextColor(remarkType, context),
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  createdAt,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            Text(
+                              description,
+                              style: TextStyle(
+                                fontSize: 15,
+                                height: 1.4,
+                                color: cs.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            Row(
+                              children: [
+                                Icon(Icons.person,
+                                    size: 16,
+                                    color: cs.onSurface.withOpacity(0.6)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  postedBy,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: cs.onSurface.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            )
+                          ],
                         ),
                       );
                     },

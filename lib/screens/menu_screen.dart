@@ -53,7 +53,7 @@ class MenuScreen extends StatelessWidget {
       },
       {
         'icon': Icons.workspace_premium_outlined,
-        'label': t.rewards,
+        'label': t.rewarsRemarkmenu,
         'action': 'rewards'
       },
 

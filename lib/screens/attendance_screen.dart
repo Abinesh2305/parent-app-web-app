@@ -146,7 +146,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       }
 
       final workingDays = data['noof_working_days'] ?? 0;
-      final absCount = data['student_absent_count'] ?? 0;
+      final absCount = data['combined_absent_count'] ?? 0;
       final presCount = data['present_days'] ?? 0;
       final leaveCount = data['student_leave_count'] ?? 0;
 
@@ -451,7 +451,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             _summaryItem(
                 t.workingDays, totalDays.toString(), Colors.blue.shade700),
             _summaryItem(t.absent, absentDays.toString(), Colors.red.shade700),
-            _summaryItem(t.leave, leaveDays.toString(), Colors.orange.shade700),
+            // _summaryItem(t.leave, leaveDays.toString(), Colors.orange.shade700),
             _summaryItem(
                 t.present, presentDays.toString(), Colors.green.shade700),
             Flexible(

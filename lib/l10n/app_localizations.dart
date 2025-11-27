@@ -875,6 +875,12 @@ abstract class AppLocalizations {
   /// **'Gallery'**
   String get gallery;
 
+  /// No description provided for @rewarsRemarkmenu.
+  ///
+  /// In en, this message translates to:
+  /// **'R&R'**
+  String get rewarsRemarkmenu;
+
   /// No description provided for @rewards.
   ///
   /// In en, this message translates to:

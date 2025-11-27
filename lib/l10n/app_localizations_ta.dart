@@ -399,6 +399,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get gallery => 'காட்சியகம்';
 
   @override
+  String get rewarsRemarkmenu => 'விருது / குறிப்பு';
+
+  @override
   String get rewards => 'விருதுகள் / குறிப்புகள்';
 
   @override

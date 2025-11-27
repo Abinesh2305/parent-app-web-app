@@ -399,6 +399,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gallery => 'Gallery';
 
   @override
+  String get rewarsRemarkmenu => 'R&R';
+
+  @override
   String get rewards => 'Rewards / Remarks';
 
   @override

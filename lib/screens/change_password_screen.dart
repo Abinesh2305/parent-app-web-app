@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:school_dashboard/services/change_password_service.dart';
+import '../main.dart';
+import '../services/dio_client.dart';
+import 'package:dio/dio.dart';
+import 'package:hive/hive.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final int userId;
@@ -56,7 +60,37 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
 
     if (response['status'] == 1) {
-      Navigator.popUntil(context, (route) => route.isFirst);
+      final box = Hive.box('settings');
+
+      // 1. Refresh user from backend
+      final profileRes = await DioClient.dio.post(
+        'profile_details',
+        data: {
+          'user_id': widget.userId,
+          'api_token': widget.apiToken,
+        },
+        options: Options(headers: {'x-api-key': widget.apiToken}),
+      );
+
+      if (profileRes.data != null && profileRes.data['status'] == 1) {
+        final userData = profileRes.data['data'];
+
+        // 2. Save updated user + token in Hive
+        await box.put('user', userData);
+        await box.put('token', userData['api_token']);
+      }
+
+      // 3. Navigate cleanly to Home screen (as this correct user)
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MainNavigationScreen(
+            onToggleTheme: () {},
+            onToggleLanguage: () {},
+          ),
+        ),
+        (route) => false,
+      );
     }
   }
 
