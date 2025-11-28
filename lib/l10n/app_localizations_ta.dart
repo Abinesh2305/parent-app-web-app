@@ -451,4 +451,10 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get ok => 'சரி';
+
+  @override
+  String get sms => 'செய்தி';
+
+  @override
+  String get smsTitle => 'SMS தொடர்புகள்';
 }

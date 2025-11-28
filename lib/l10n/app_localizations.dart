@@ -982,6 +982,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ok'**
   String get ok;
+
+  /// No description provided for @sms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get sms;
+
+  /// No description provided for @smsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS Communications'**
+  String get smsTitle;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

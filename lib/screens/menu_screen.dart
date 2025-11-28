@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
+import 'package:school_dashboard/screens/sms/sms_communications_screen.dart';
 import '../main.dart';
 import '../main.dart' show MainNavigationScreen;
 import '../screens/exam_screen.dart';
@@ -38,6 +39,7 @@ class MenuScreen extends StatelessWidget {
       {'icon': Icons.fact_check_outlined, 'label': t.exams, 'action': 'exams'},
       {'icon': Icons.currency_rupee, 'label': t.fees, 'action': 'fees'},
       {'icon': Icons.book_outlined, 'label': t.homework, 'action': 'homework'},
+      {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms_communications'},
       {
         'icon': Icons.calendar_month,
         'label': t.attendance,
@@ -163,6 +165,8 @@ class MenuScreen extends StatelessWidget {
         );
         break;
 
+      
+
       case 'attendance':
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(
@@ -219,6 +223,13 @@ class MenuScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ContactsScreen()),
+        );
+        break;
+
+      case 'sms_communications':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SmsCommunicationsScreen()),
         );
         break;
 

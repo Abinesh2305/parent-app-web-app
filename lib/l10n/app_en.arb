@@ -184,6 +184,9 @@
 "noContacts": "No contacts available",
 "category": "Category",
 
-"ok": "Ok"
+"ok": "Ok",
+
+"sms": "SMS",
+"smsTitle": "SMS Communications"
 
 }

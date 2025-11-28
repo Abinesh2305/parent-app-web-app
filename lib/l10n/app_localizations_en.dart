@@ -451,4 +451,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ok => 'Ok';
+
+  @override
+  String get sms => 'SMS';
+
+  @override
+  String get smsTitle => 'SMS Communications';
 }
