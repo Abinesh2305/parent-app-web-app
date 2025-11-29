@@ -14,6 +14,11 @@ import '../widgets/audio_player_widget.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
+import '../helpers/file_downloader.dart';
+import '../widgets/image_preview.dart';
+import '../helpers/youtube_utils.dart';
+import '../widgets/html_message_view.dart';
+import '../widgets/tts_controls.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -45,7 +50,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
   bool _isSpeaking = false;
 
   String _activeWord = "";
-  ScrollController _readScroll = ScrollController();
+  final ScrollController _readScroll = ScrollController();
+
+  bool hasTable(String html) {
+    return RegExp(r"<table[\s\S]*?>", caseSensitive: false).hasMatch(html);
+  }
+
+  bool hasHtmlTags(String html) {
+    return RegExp(r"<[^>]+>").hasMatch(html);
+  }
 
   @override
   void initState() {
@@ -72,6 +85,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void dispose() {
     _flutterTts.stop();
     _searchController.dispose();
+    _readScroll.dispose();
     super.dispose();
   }
 
@@ -80,16 +94,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     final content = _currentReadText;
 
-    // Find the position of the current word
     final index = content.indexOf(word);
     if (index == -1) return;
 
-    // Estimate a scroll offset based on text length
-    double ratio = index / content.length;
+    final double ratio = index / content.length;
+    final double offset = ratio * _readScroll.position.maxScrollExtent;
 
-    double offset = ratio * _readScroll.position.maxScrollExtent;
-
-    // Animate scroll
     _readScroll.animateTo(
       offset,
       duration: const Duration(milliseconds: 300),
@@ -112,7 +122,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _pauseReading() async {
-    var result = await _flutterTts.pause();
+    final result = await _flutterTts.pause();
     if (result == 1) {
       setState(() {
         _isPaused = true;
@@ -210,10 +220,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final category = (n['post_category'] ?? '').toString().toLowerCase();
       final message =
           html_parser.parse(n['message'] ?? '').body?.text.toLowerCase() ?? '';
-      return title.contains(query.toLowerCase()) ||
-          category.contains(query.toLowerCase()) ||
-          message.contains(query.toLowerCase());
+      final q = query.toLowerCase();
+      return title.contains(q) || category.contains(q) || message.contains(q);
     }).toList();
+
     setState(() => _filteredNotifications = filtered);
   }
 
@@ -291,7 +301,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            // Fetch categories once when modal opens
+            // Safety: re-fetch categories inside if needed
             if (loading) {
               NotificationService().getCategories().then((response) {
                 setModalState(() {
@@ -342,15 +352,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     const SizedBox(height: 20),
                     Text(
                       t.filterNotification,
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
 
                     const SizedBox(height: 16),
 
                     // From Date
-                    Text(t.fromDate,
-                        style: TextStyle(color: colorScheme.onSurface)),
+                    Text(
+                      t.fromDate,
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () async {
@@ -365,13 +379,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         }
                       },
                       child: _buildDateBox(
-                          isDark, colorScheme, fromDate, t.selectDate),
+                        isDark,
+                        colorScheme,
+                        fromDate,
+                        t.selectDate,
+                      ),
                     ),
                     const SizedBox(height: 16),
 
                     // To Date
-                    Text(t.toDate,
-                        style: TextStyle(color: colorScheme.onSurface)),
+                    Text(
+                      t.toDate,
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () async {
@@ -386,13 +406,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         }
                       },
                       child: _buildDateBox(
-                          isDark, colorScheme, toDate, t.selectDate),
+                        isDark,
+                        colorScheme,
+                        toDate,
+                        t.selectDate,
+                      ),
                     ),
                     const SizedBox(height: 16),
 
                     // Category Dropdown
-                    Text(t.category,
-                        style: TextStyle(color: colorScheme.onSurface)),
+                    Text(
+                      t.category,
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -434,8 +460,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     const SizedBox(height: 16),
 
                     // Type Dropdown
-                    Text(t.type,
-                        style: TextStyle(color: colorScheme.onSurface)),
+                    Text(
+                      t.type,
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -448,14 +476,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           value: selectedType,
                           isExpanded: true,
                           onChanged: (value) {
-                            setModalState(() => selectedType = value ?? "all");
+                            setModalState(
+                              () => selectedType = value ?? "all",
+                            );
                           },
                           items: const [
-                            DropdownMenuItem(value: "all", child: Text("All")),
                             DropdownMenuItem(
-                                value: "post", child: Text("Post Only")),
+                              value: "all",
+                              child: Text("All"),
+                            ),
                             DropdownMenuItem(
-                                value: "sms", child: Text("SMS Only")),
+                              value: "post",
+                              child: Text("Post Only"),
+                            ),
+                            DropdownMenuItem(
+                              value: "sms",
+                              child: Text("SMS Only"),
+                            ),
                           ],
                         ),
                       ),
@@ -483,13 +520,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: colorScheme.primary),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: Text(t.clearFilter,
-                                style: TextStyle(color: colorScheme.primary)),
+                            child: Text(
+                              t.clearFilter,
+                              style: TextStyle(color: colorScheme.primary),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -510,7 +551,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               backgroundColor: colorScheme.primary,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -538,9 +581,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-// Helper widget for date box
-  Widget _buildDateBox(bool isDark, ColorScheme colorScheme, DateTime? date,
-      String placeholder) {
+  // Helper widget for date box
+  Widget _buildDateBox(
+    bool isDark,
+    ColorScheme colorScheme,
+    DateTime? date,
+    String placeholder,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
@@ -567,8 +614,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Cannot open link")));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Cannot open link")),
+      );
     }
   }
 
@@ -602,10 +651,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         onChanged: _filterSearch,
                         decoration: InputDecoration(
                           hintText: t.searchNotifications,
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: const Icon(Icons.search),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
                         style: TextStyle(color: colorScheme.onSurface),
                       ),
@@ -652,8 +703,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                     n['post_category'] ?? 'General';
                                 final categoryId = n['category_id'] ?? 0;
                                 final textColorHex =
-                                    // _categoryColors[categoryId] ?? "#007BFF";
-                                    "#007BFF";
+                                    _categoryColors[categoryId] ?? "#007BFF";
 
                                 final bgImage = n['post_theme']?['is_image'];
                                 final tagColor = _hexToColor(textColorHex);
@@ -677,8 +727,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
                                 final rawFiles = n['is_files_attachment'] ?? [];
                                 final videoUrl = n['is_video_attachment'];
-                                final audioUrl = n[
-                                    'is_attachment']; // or use n['media_attachment'] if that’s where mp3 is
+                                final audioUrl = n['is_attachment'];
 
                                 final files = rawFiles is List
                                     ? rawFiles
@@ -741,8 +790,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 4),
+                                                  horizontal: 10,
+                                                  vertical: 4,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: tagColor
                                                       .withOpacity(0.15),
@@ -768,7 +818,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                   .isNotEmpty)
                                             Padding(
                                               padding: const EdgeInsets.only(
-                                                  top: 12),
+                                                top: 12,
+                                              ),
                                               child: GestureDetector(
                                                 onTap: () {
                                                   Navigator.push(
@@ -788,10 +839,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                     color: Colors.black,
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            10),
+                                                      10,
+                                                    ),
                                                     image: DecorationImage(
                                                       image: NetworkImage(
-                                                        'https://img.youtube.com/vi/${_extractYouTubeId(n['youtube_link'])}/hqdefault.jpg',
+                                                        'https://img.youtube.com/vi/${YouTubeUtils.extractId(n['youtube_link'])}/hqdefault.jpg',
                                                       ),
                                                       fit: BoxFit.cover,
                                                     ),
@@ -810,11 +862,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           const SizedBox(height: 12),
 
                                           // Message area
-                                          // Message area
                                           Container(
                                             width: double.infinity,
-                                            height:
-                                                340, // increased height for larger messages and visible background
+                                            height: 340,
                                             decoration: BoxDecoration(
                                               color: colorScheme
                                                   .surfaceContainerHighest
@@ -833,10 +883,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                             ),
                                             child: Padding(
                                               padding: EdgeInsets.fromLTRB(
-                                                  16,
-                                                  bgImage != null ? 100 : 16,
-                                                  16,
-                                                  16), // top padding for bg text
+                                                16,
+                                                bgImage != null ? 100 : 16,
+                                                16,
+                                                16,
+                                              ),
                                               child: Column(
                                                 children: [
                                                   Expanded(
@@ -845,12 +896,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                       controller: _readScroll,
                                                       physics:
                                                           const BouncingScrollPhysics(),
-                                                      child: RichText(
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        text:
-                                                            _buildHighlightedText(
-                                                                message),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          _buildMessageBody(
+                                                            rawMsg,
+                                                            message,
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                   ),
@@ -858,55 +913,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                   Align(
                                                     alignment:
                                                         Alignment.centerRight,
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        IconButton(
-                                                          icon: Icon(
-                                                              Icons.volume_up),
-                                                          onPressed: () =>
-                                                              _readAloud(
-                                                                  message),
-                                                          tooltip: "Start",
-                                                        ),
-                                                        IconButton(
-                                                          icon:
-                                                              Icon(Icons.pause),
-                                                          onPressed: _isSpeaking
-                                                              ? _pauseReading
+                                                    child: TtsControls(
+                                                      onStart: () =>
+                                                          _readAloud(message),
+                                                      onPause: _isSpeaking
+                                                          ? _pauseReading
+                                                          : null,
+                                                      onResume: _isPaused
+                                                          ? _resumeReading
+                                                          : null,
+                                                      onStop: (_isSpeaking ||
+                                                              _isPaused)
+                                                          ? _stopReading
+                                                          : null,
+                                                      onRestart:
+                                                          _currentReadText
+                                                                  .isNotEmpty
+                                                              ? _restartReading
                                                               : null,
-                                                          tooltip: "Pause",
-                                                        ),
-                                                        IconButton(
-                                                          icon: Icon(
-                                                              Icons.play_arrow),
-                                                          onPressed: _isPaused
-                                                              ? _resumeReading
-                                                              : null,
-                                                          tooltip: "Resume",
-                                                        ),
-                                                        IconButton(
-                                                          icon:
-                                                              Icon(Icons.stop),
-                                                          onPressed:
-                                                              _isSpeaking ||
-                                                                      _isPaused
-                                                                  ? _stopReading
-                                                                  : null,
-                                                          tooltip: "Stop",
-                                                        ),
-                                                        IconButton(
-                                                          icon: Icon(
-                                                              Icons.refresh),
-                                                          onPressed:
-                                                              _currentReadText
-                                                                      .isNotEmpty
-                                                                  ? _restartReading
-                                                                  : null,
-                                                          tooltip: "Restart",
-                                                        ),
-                                                      ],
+                                                      isSpeaking: _isSpeaking,
+                                                      isPaused: _isPaused,
                                                     ),
                                                   ),
                                                 ],
@@ -927,7 +953,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                       .isNotEmpty))
                                             Padding(
                                               padding: const EdgeInsets.only(
-                                                  top: 12, bottom: 4),
+                                                top: 12,
+                                                bottom: 4,
+                                              ),
                                               child: Column(
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,
@@ -945,15 +973,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         const Text(
                                                           "Audio:",
                                                           style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize: 14),
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 14,
+                                                          ),
                                                         ),
                                                         const SizedBox(
-                                                            height: 8),
+                                                          height: 8,
+                                                        ),
                                                         AudioPlayerWidget(
-                                                            audioUrl: audioUrl),
+                                                          audioUrl: audioUrl,
+                                                        ),
                                                       ],
                                                     ),
                                                   const SizedBox(height: 16),
@@ -971,13 +1001,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         const Text(
                                                           "Video:",
                                                           style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize: 14),
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 14,
+                                                          ),
                                                         ),
                                                         const SizedBox(
-                                                            height: 8),
+                                                          height: 8,
+                                                        ),
                                                         GestureDetector(
                                                           onTap: () {
                                                             Navigator.push(
@@ -985,8 +1016,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                               MaterialPageRoute(
                                                                 builder: (_) =>
                                                                     VideoFullScreen(
-                                                                        videoUrl:
-                                                                            videoUrl),
+                                                                  videoUrl:
+                                                                      videoUrl,
+                                                                ),
                                                               ),
                                                             );
                                                           },
@@ -999,22 +1031,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .circular(
-                                                                          10),
+                                                                10,
+                                                              ),
                                                               image:
                                                                   const DecorationImage(
-                                                                image: AssetImage(
-                                                                    'assets/video_placeholder.png'),
+                                                                image:
+                                                                    AssetImage(
+                                                                  'assets/video_placeholder.png',
+                                                                ),
                                                                 fit: BoxFit
                                                                     .cover,
                                                               ),
                                                             ),
                                                             child: const Center(
                                                               child: Icon(
-                                                                  Icons
-                                                                      .play_circle_fill,
-                                                                  color: Colors
-                                                                      .white,
-                                                                  size: 60),
+                                                                Icons
+                                                                    .play_circle_fill,
+                                                                color: Colors
+                                                                    .white,
+                                                                size: 60,
+                                                              ),
                                                             ),
                                                           ),
                                                         ),
@@ -1022,7 +1058,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                     ),
                                                   const SizedBox(height: 12),
 
-                                                  // Existing image attachments
+                                                  // Image attachments
                                                   if (images.isNotEmpty)
                                                     Column(
                                                       crossAxisAlignment:
@@ -1032,13 +1068,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         const Text(
                                                           "Images:",
                                                           style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize: 14),
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 14,
+                                                          ),
                                                         ),
                                                         const SizedBox(
-                                                            height: 8),
+                                                          height: 8,
+                                                        ),
                                                         SizedBox(
                                                           height: 100,
                                                           child:
@@ -1055,19 +1092,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                                 padding:
                                                                     const EdgeInsets
                                                                         .only(
-                                                                        right:
-                                                                            8),
+                                                                  right: 8,
+                                                                ),
                                                                 child:
                                                                     GestureDetector(
                                                                   onTap: () =>
-                                                                      _showFullImage(
-                                                                          context,
-                                                                          img),
+                                                                      ImagePreview
+                                                                          .show(
+                                                                    context,
+                                                                    img,
+                                                                  ),
                                                                   child:
                                                                       ClipRRect(
                                                                     borderRadius:
                                                                         BorderRadius
-                                                                            .circular(8),
+                                                                            .circular(
+                                                                      8,
+                                                                    ),
                                                                     child: Image
                                                                         .network(
                                                                       img,
@@ -1088,7 +1129,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                     ),
                                                   const SizedBox(height: 10),
 
-                                                  // Existing file attachments
+                                                  // File attachments
                                                   if (files.isNotEmpty)
                                                     Column(
                                                       crossAxisAlignment:
@@ -1102,22 +1143,27 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                             .last;
                                                         return InkWell(
                                                           onTap: () =>
-                                                              _downloadFile(
-                                                                  context,
-                                                                  fileUrl),
+                                                              FileDownloader
+                                                                  .download(
+                                                            context,
+                                                            fileUrl,
+                                                          ),
                                                           child: Padding(
                                                             padding:
                                                                 const EdgeInsets
                                                                     .only(
-                                                                    bottom: 6),
+                                                              bottom: 6,
+                                                            ),
                                                             child: Row(
                                                               children: [
                                                                 const Icon(
-                                                                    Icons
-                                                                        .attach_file,
-                                                                    size: 18),
+                                                                  Icons
+                                                                      .attach_file,
+                                                                  size: 18,
+                                                                ),
                                                                 const SizedBox(
-                                                                    width: 6),
+                                                                  width: 6,
+                                                                ),
                                                                 Expanded(
                                                                   child: Text(
                                                                     fileName,
@@ -1145,8 +1191,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                             ),
 
                                           // Footer: is_notify_datetime
-                                          const SizedBox(
-                                              height: 12), // Added space above
+                                          const SizedBox(height: 12),
                                           Align(
                                             alignment: Alignment.centerLeft,
                                             child: Text(
@@ -1166,8 +1211,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                             Align(
                                               alignment: Alignment.centerRight,
                                               child: ElevatedButton.icon(
-                                                icon: const Icon(Icons.check,
-                                                    size: 18),
+                                                icon: const Icon(
+                                                  Icons.check,
+                                                  size: 18,
+                                                ),
                                                 label:
                                                     const Text("Acknowledge"),
                                                 style: ElevatedButton.styleFrom(
@@ -1179,23 +1226,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                   try {
                                                     await NotificationService()
                                                         .acknowledgePost(
-                                                            n['id']);
+                                                      n['id'],
+                                                    );
+                                                    if (!mounted) return;
                                                     ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
+                                                      context,
+                                                    ).showSnackBar(
                                                       const SnackBar(
                                                         content: Text(
-                                                            "Acknowledged successfully"),
+                                                          "Acknowledged successfully",
+                                                        ),
                                                       ),
                                                     );
                                                     _loadNotifications();
                                                   } catch (e) {
+                                                    if (!mounted) return;
                                                     ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
+                                                      context,
+                                                    ).showSnackBar(
                                                       SnackBar(
                                                         content: Text(
-                                                            "Failed to acknowledge: $e"),
+                                                          "Failed to acknowledge: $e",
+                                                        ),
                                                       ),
                                                     );
                                                   }
@@ -1209,8 +1261,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                               child: Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6),
+                                                  horizontal: 12,
+                                                  vertical: 6,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.green
                                                       .withOpacity(0.15),
@@ -1242,95 +1295,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  void _showFullImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: EdgeInsets.zero,
-        child: Stack(
-          children: [
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                color: Colors.black,
-                child: InteractiveViewer(
-                  panEnabled: true,
-                  minScale: 0.8,
-                  maxScale: 4.0,
-                  child: Center(
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Center(
-                        child: Icon(Icons.broken_image,
-                            color: Colors.white, size: 40),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 30,
-              right: 20,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Decides what to render for the message body so we avoid duplicates:
+  // 1) If contains table  -> WebView only (no RichText)
+  // 2) HTML without table -> WebView + highlighted RichText
+  // 3) Plain text         -> highlighted RichText only
+  Widget _buildMessageBody(String rawMsg, String message) {
+    final bool containsHtml = hasHtmlTags(rawMsg);
 
-  Future<void> _downloadFile(BuildContext context, String url) async {
-    try {
-      Directory? dir;
-
-      if (Platform.isAndroid) {
-        // Android private folder (no permission required)
-        dir = await getExternalStorageDirectory();
-      } else {
-        // iOS
-        dir = await getApplicationDocumentsDirectory();
-      }
-
-      if (dir == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cannot access storage")),
-        );
-        return;
-      }
-
-      final fileName = url.split('/').last;
-      final filePath = "${dir.path}/$fileName";
-
-      final dio = Dio();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Downloading $fileName...")),
-      );
-
-      await dio.download(url, filePath);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Saved in: ${dir.path}")),
-      );
-
-      await OpenFilex.open(filePath);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download failed: $e")),
-      );
+    // If message contains ANY HTML → show ONLY HtmlMessageView
+    if (containsHtml) {
+      return HtmlMessageView(html: rawMsg);
     }
+
+    // If message is plain text → show TTS highlighted text
+    return RichText(text: _buildHighlightedText(message));
   }
 
   Color _hexToColor(String hex) {
@@ -1359,16 +1337,5 @@ class _NotificationScreenState extends State<NotificationScreen> {
         );
       }).toList(),
     );
-  }
-
-  String _extractYouTubeId(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return '';
-    if (uri.queryParameters.containsKey('v')) {
-      return uri.queryParameters['v']!;
-    } else if (uri.pathSegments.isNotEmpty) {
-      return uri.pathSegments.last;
-    }
-    return '';
   }
 }

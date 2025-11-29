@@ -1,5 +1,3 @@
-// FULL WORKING FILE WITH CATEGORY DROPDOWN FIX
-
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:hive_flutter/hive_flutter.dart';
@@ -201,12 +199,9 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
-
-      //-------------------------------------------------------------
-      // APP BAR WITH BACK BUTTON
-      //-------------------------------------------------------------
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
         elevation: 0,
@@ -216,13 +211,12 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
         ),
         title: Text(
           t.smsTitle,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
-
       body: SafeArea(
         child: Column(
           children: [
@@ -244,9 +238,9 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                         onChanged: _filterSearch,
                         decoration: InputDecoration(
                           hintText: t.searchNotifications,
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: const Icon(Icons.search),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
+                          contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 14),
                         ),
                       ),
@@ -290,9 +284,6 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
     );
   }
 
-  //-------------------------------------------------------------
-  // DROPDOWN FIX IMPLEMENTED HERE
-  //-------------------------------------------------------------
   void _openFilterModal() async {
     DateTime? fromDate = _selectedFromDate;
     DateTime? toDate = _selectedToDate;
@@ -309,16 +300,11 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
       categories = await NotificationService().getCategories();
       loading = false;
 
-      // FIX: Realign selectedCategory instance
       if (selectedCategory != null) {
         final match = categories.where(
             (cat) => cat['id'].toString() == selectedCategory['id'].toString());
 
-        if (match.isNotEmpty) {
-          selectedCategory = match.first; // IMPORTANT FIX
-        } else {
-          selectedCategory = null;
-        }
+        selectedCategory = match.isNotEmpty ? match.first : null;
       }
     } catch (e) {
       loading = false;
@@ -338,18 +324,10 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            //-------------------------------------------------------------
-            // FIX: Re-run instance alignment inside StatefulBuilder also
-            //-------------------------------------------------------------
             if (!loading && selectedCategory != null) {
               final match = categories.where((cat) =>
                   cat['id'].toString() == selectedCategory['id'].toString());
-
-              if (match.isNotEmpty) {
-                selectedCategory = match.first;
-              } else {
-                selectedCategory = null;
-              }
+              selectedCategory = match.isNotEmpty ? match.first : null;
             }
 
             return Padding(
@@ -375,10 +353,10 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      "Filter SMS",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      t.filterNotification,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
                     Text(t.fromDate),
@@ -395,7 +373,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                           setModalState(() => fromDate = picked);
                         }
                       },
-                      child: _buildDateBox(isDark, colorScheme, fromDate),
+                      child: _buildDateBox(isDark, colorScheme, fromDate, t),
                     ),
                     const SizedBox(height: 20),
                     Text(t.toDate),
@@ -412,7 +390,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                           setModalState(() => toDate = picked);
                         }
                       },
-                      child: _buildDateBox(isDark, colorScheme, toDate),
+                      child: _buildDateBox(isDark, colorScheme, toDate, t),
                     ),
                     const SizedBox(height: 20),
                     Text(t.category),
@@ -434,18 +412,17 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                           ),
                           onChanged: loading
                               ? null
-                              : (value) => setModalState(() {
-                                    selectedCategory = value;
-                                  }),
+                              : (value) =>
+                                  setModalState(() => selectedCategory = value),
                           items: [
                             const DropdownMenuItem(
                                 value: null, child: Text("All")),
-                            ...categories.map((cat) {
-                              return DropdownMenuItem(
+                            ...categories.map(
+                              (cat) => DropdownMenuItem(
                                 value: cat,
                                 child: Text(cat['name'] ?? "Unnamed"),
-                              );
-                            })
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -463,9 +440,8 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                         child: DropdownButton<String>(
                           value: selectedType,
                           isExpanded: true,
-                          onChanged: (value) {
-                            setModalState(() => selectedType = value ?? "All");
-                          },
+                          onChanged: (value) => setModalState(
+                              () => selectedType = value ?? "All"),
                           items: const [
                             DropdownMenuItem(value: "All", child: Text("All")),
                             DropdownMenuItem(
@@ -487,33 +463,29 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                           child: OutlinedButton(
                             onPressed: () {
                               Navigator.pop(context);
-
                               setState(() {
                                 _selectedFromDate = null;
                                 _selectedToDate = null;
                                 _selectedCategory = null;
                                 _selectedType = "All";
                               });
-
                               _loadSMS();
                             },
-                            child: const Text("Clear"),
+                            child: Text(t.clearFilter),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
-                            child: const Text("Apply"),
+                            child: Text(t.applyFilter),
                             onPressed: () async {
                               Navigator.pop(context);
-
                               setState(() {
                                 _selectedFromDate = fromDate;
                                 _selectedToDate = toDate;
                                 _selectedCategory = selectedCategory;
                                 _selectedType = selectedType;
                               });
-
                               await _applyFilter();
                             },
                           ),
@@ -524,7 +496,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text("Cancel"),
+                        child: Text(t.cancel),
                       ),
                     ),
                   ],
@@ -537,7 +509,12 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
     );
   }
 
-  Widget _buildDateBox(bool isDark, ColorScheme colorScheme, DateTime? date) {
+  Widget _buildDateBox(
+    bool isDark,
+    ColorScheme colorScheme,
+    DateTime? date,
+    AppLocalizations t,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
@@ -550,7 +527,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
           Text(
             date != null
                 ? "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}"
-                : "Select date",
+                : t.selectDate,
           ),
           const Icon(Icons.calendar_today, size: 18),
         ],
@@ -586,7 +563,6 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
     final title = n['title'] ?? 'Untitled';
     final rawMsg = n['message'] ?? '';
     final message = html_parser.parse(rawMsg).body?.text.trim() ?? '';
-
     final category = n['post_category'] ?? 'General';
     final smsType = n['sms_type'] ?? 'SMS Communication';
 
@@ -683,30 +659,25 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                           IconButton(
                             icon: const Icon(Icons.volume_up),
                             onPressed: () => _readAloud(message),
-                            tooltip: "Start",
                           ),
                           IconButton(
                             icon: const Icon(Icons.pause),
                             onPressed: _isSpeaking ? _pauseReading : null,
-                            tooltip: "Pause",
                           ),
                           IconButton(
                             icon: const Icon(Icons.play_arrow),
                             onPressed: _isPaused ? _resumeReading : null,
-                            tooltip: "Resume",
                           ),
                           IconButton(
                             icon: const Icon(Icons.stop),
                             onPressed:
                                 _isSpeaking || _isPaused ? _stopReading : null,
-                            tooltip: "Stop",
                           ),
                           IconButton(
                             icon: const Icon(Icons.refresh),
                             onPressed: _currentReadText.isNotEmpty
                                 ? _restartReading
                                 : null,
-                            tooltip: "Restart",
                           ),
                         ],
                       ),

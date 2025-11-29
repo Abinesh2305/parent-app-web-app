@@ -57,7 +57,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get leaveDetails => 'விடுப்பு விவரங்கள்';
 
   @override
-  String get status => 'நிலை';
+  String get status => 'Status';
 
   @override
   String get summary => 'சுருக்கம்';
@@ -186,10 +186,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get type => 'வகைப்பாடு';
 
   @override
-  String get clearFilter => 'வடிகட்டியை அழிக்கவும்';
+  String get clearFilter => 'அழி';
 
   @override
-  String get applyFilter => 'வடிகட்டியை பயன்படுத்தவும்';
+  String get applyFilter => 'பயன் செய்';
 
   @override
   String get cancel => 'ரத்து செய்';

@@ -1,7 +1,7 @@
 name: school_dashboard
 description: A professional school parent Flutter application
 publish_to: 'none'
-version: 3.1.13+25
+version: 3.1.14+28
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -43,6 +43,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   auto_size_text: ^3.0.0
   flutter_html: ^3.0.0
+  flutter_inappwebview: ^6.1.5
 
   
 
