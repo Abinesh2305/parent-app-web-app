@@ -1016,9 +1016,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                               MaterialPageRoute(
                                                                 builder: (_) =>
                                                                     VideoFullScreen(
-                                                                  videoUrl:
-                                                                      videoUrl,
-                                                                ),
+                                                                        videoUrl:
+                                                                            videoUrl),
                                                               ),
                                                             );
                                                           },
@@ -1026,30 +1025,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                             height: 200,
                                                             decoration:
                                                                 BoxDecoration(
-                                                              color:
-                                                                  Colors.black,
+                                                              color: Colors
+                                                                  .grey[900],
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .circular(
-                                                                10,
-                                                              ),
-                                                              image:
-                                                                  const DecorationImage(
-                                                                image:
-                                                                    AssetImage(
-                                                                  'assets/video_placeholder.png',
-                                                                ),
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ),
+                                                                          10),
                                                             ),
                                                             child: const Center(
                                                               child: Icon(
                                                                 Icons
                                                                     .play_circle_fill,
+                                                                size: 60,
                                                                 color: Colors
                                                                     .white,
-                                                                size: 60,
                                                               ),
                                                             ),
                                                           ),
@@ -1304,7 +1293,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     // If message contains ANY HTML → show ONLY HtmlMessageView
     if (containsHtml) {
-      return HtmlMessageView(html: rawMsg);
+      return HtmlMessageView(
+        html: rawMsg,
+        activeWord: _activeWord,
+      );
     }
 
     // If message is plain text → show TTS highlighted text
