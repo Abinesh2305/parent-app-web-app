@@ -23,10 +23,10 @@ class SmsService {
     final body = {
       "user_id": user['id'],
       "api_token": token,
-      "page_no": 0, // default 15
+      "page_no": 0,
       "search": search ?? "",
-      "sms_type": type ?? "",
       "category_id": category != null ? category['id'] ?? 0 : 0,
+      "sms_type": type ?? "",
       "from_date": fromDate != null
           ? "${fromDate.year}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}"
           : "",

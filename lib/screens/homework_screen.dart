@@ -8,7 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/services/homework_service.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:school_dashboard/l10n/app_localizations.dart';
+import '../widgets/image_preview.dart';
 
 class HomeworkScreen extends StatefulWidget {
   const HomeworkScreen({super.key});
@@ -30,7 +30,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     settingsBox = Hive.box('settings');
     _loadHomeworks();
 
-    // Reload homework when user switches
     settingsBox.watch(key: 'user').listen((_) {
       if (mounted) _loadHomeworks();
     });
@@ -42,7 +41,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       final data = await _service.getHomeworks(date: _selectedDate);
       setState(() => _homeworks = data);
 
-      // auto mark all visible homeworks as read
       for (final hw in data) {
         if (hw["read_status"] == "UNREAD") {
           await _service.markAsRead(hw["main_ref_no"]);
@@ -80,10 +78,21 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     _loadHomeworks();
   }
 
-  // Combine all attachments into a single list
+  // Identify images
+  bool _isImage(String url) {
+    final u = url.toLowerCase();
+    return u.endsWith('.jpg') ||
+        u.endsWith('.jpeg') ||
+        u.endsWith('.png') ||
+        u.endsWith('.gif') ||
+        u.endsWith('.webp');
+  }
+
+  // Collect all unique attachments
   List<String> _collectAllAttachments() {
     final seen = <String>{};
     final result = <String>[];
+
     for (final hw in _homeworks) {
       final attachments = (hw['attachments'] as List?) ?? [];
       for (final a in attachments) {
@@ -100,10 +109,8 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       Directory? dir;
 
       if (Platform.isAndroid) {
-        // Android private folder (no permission required)
         dir = await getExternalStorageDirectory();
       } else {
-        // iOS private folder
         dir = await getApplicationDocumentsDirectory();
       }
 
@@ -119,7 +126,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
 
       final dio = Dio();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Downloading $fileName...")),
+        SnackBar(content: Text("Downloading $fileName")),
       );
 
       await dio.download(url, filePath);
@@ -156,7 +163,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Date navigation
             GestureDetector(
               onTap: _openDatePicker,
               child: Row(
@@ -183,10 +189,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Content
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -217,7 +220,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                     1: FlexColumnWidth(2),
                                   },
                                   children: [
-                                    // Table header
                                     TableRow(
                                       decoration: BoxDecoration(
                                         color: colorScheme.primary
@@ -242,25 +244,12 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                         ),
                                       ],
                                     ),
-
-                                    // Table rows
                                     ..._homeworks.map((hw) {
-                                      final bool ackRequired =
-                                          hw["ack_required"] == 1;
-                                      final String ackStatus =
-                                          hw["ack_status"] ?? "PENDING";
-
                                       return TableRow(
                                         children: [
                                           Padding(
                                             padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(hw['subject'] ?? ''),
-                                              ],
-                                            ),
+                                            child: Text(hw['subject'] ?? ''),
                                           ),
                                           Padding(
                                             padding: const EdgeInsets.all(8.0),
@@ -274,8 +263,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-
-// Common Acknowledge button for the entire homework group
                               if (anyRequiresAck)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 16),
@@ -306,20 +293,18 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                                     hw["main_ref_no"]);
                                               }
                                             }
-                                            _loadHomeworks(); // refresh UI
+                                            _loadHomeworks();
                                           },
                                           child: Text("Acknowledge"),
                                         ),
                                 ),
-
-                              // Show attachments together
                               if (allAttachments.isNotEmpty)
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       t.attachments,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16),
                                     ),
@@ -328,13 +313,19 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                       spacing: 8,
                                       runSpacing: 8,
                                       children: allAttachments.map((file) {
+                                        final isImage = _isImage(file);
                                         final isPdf =
                                             file.toLowerCase().endsWith('.pdf');
                                         final fileName = file.split('/').last;
 
                                         return InkWell(
-                                          onTap: () =>
-                                              _downloadFile(context, file),
+                                          onTap: () {
+                                            if (isImage) {
+                                              ImagePreview.show(context, file);
+                                            } else {
+                                              _downloadFile(context, file);
+                                            }
+                                          },
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [

@@ -174,14 +174,11 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
   }
 
   Color _getDefaultBgColor(String type) {
-    switch (type.toLowerCase()) {
+    switch (type) {
       case "attendance":
         return Colors.amber.shade200;
-
       case "birthday":
-      case "birthday wish":
         return Colors.pink.shade200;
-
       default:
         return Colors.blue.shade200;
     }
@@ -538,18 +535,23 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
   Future<void> _applyFilter() async {
     setState(() => _loading = true);
 
+    String typeFilter = "";
+    if (_selectedType == "SMS Communication") typeFilter = "sms";
+    if (_selectedType == "Attendance") typeFilter = "attendance";
+    if (_selectedType == "Birthday Wish") typeFilter = "birthday";
+
     try {
       final data = await SmsService().getSMSCommunications(
         fromDate: _selectedFromDate,
         toDate: _selectedToDate,
         category: _selectedCategory,
-        type: _selectedType == "All" ? "" : _selectedType,
+        type: typeFilter,
         search: _searchController.text.trim(),
       );
 
       setState(() {
-        _smsList = data;
-        _filteredList = data;
+        _smsList = data; // all
+        _filteredList = data; // all
         _loading = false;
       });
     } catch (e) {
@@ -560,26 +562,35 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
   }
 
   Widget _buildSmsCard(dynamic n, ColorScheme colorScheme) {
-    final title = n['title'] ?? 'Untitled';
-    final rawMsg = n['message'] ?? '';
-    final message = html_parser.parse(rawMsg).body?.text.trim() ?? '';
-    final category = n['post_category'] ?? 'General';
-    final smsType = n['sms_type'] ?? 'SMS Communication';
+    final smsType = n['type']?.toString().toLowerCase() ?? 'sms';
 
-    final categoryTextColor =
-        n['is_category_text_color'] != null && n['is_category_text_color'] != ""
-            ? _hexToColor(n['is_category_text_color'])
-            : Colors.black;
+    // Old UI fields
+    final message = n['final_content'] ?? n['content'] ?? '';
+    final formattedTime = n['notify_datetime'] ?? '';
+    final categoryName = n['post_category'] ?? 'General';
 
+    // Category text color
+    final categoryTextColor = (n['is_category_text_color'] != null &&
+            n['is_category_text_color'].toString().isNotEmpty)
+        ? _hexToColor(n['is_category_text_color'])
+        : Colors.black;
+
+    // Category image
     final bgImage = n['post_theme']?['is_image'];
     final bgColor =
         bgImage == null ? _getDefaultBgColor(smsType) : Colors.transparent;
 
-    final formattedTime = n['is_notify_datetime'] ?? '';
+    // Title (used in old UI)
+    String title = '';
+    if (smsType == 'sms')
+      title = 'SMS Communication';
+    else if (smsType == 'attendance')
+      title = 'Attendance Notification';
+    else if (smsType == 'birthday') title = 'Birthday Wish';
 
     return VisibilityDetector(
       key: Key("sms_${n['id']}"),
-      onVisibilityChanged: (info) {},
+      onVisibilityChanged: (_) {},
       child: Card(
         color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
         shape: RoundedRectangleBorder(
@@ -591,6 +602,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title row + category tag (old design)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -612,7 +624,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      category,
+                      categoryName,
                       style: TextStyle(
                         color: categoryTextColor,
                         fontSize: 12,
@@ -622,7 +634,10 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
+              // OLD DESIGN big container (fixed 340 height)
               Container(
                 width: double.infinity,
                 height: 340,
@@ -639,9 +654,14 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                 ),
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
-                      16, bgImage != null ? 100 : 16, 16, 16),
+                    16,
+                    bgImage != null ? 100 : 16, // IMPORTANT old behavior
+                    16,
+                    16,
+                  ),
                   child: Column(
                     children: [
+                      // SCROLLABLE RichText (old UI)
                       Expanded(
                         child: SingleChildScrollView(
                           controller: _readScroll,
@@ -652,7 +672,10 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 8),
+
+                      // OLD UI TTS BUTTONS (unchanged)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -685,7 +708,10 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 12),
+
+              // Time bottom left (same as old)
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(

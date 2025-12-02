@@ -16,6 +16,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
   int page = 0;
   bool hasMore = true;
 
+  static const int limit = 10; // backend limit
+
   @override
   void initState() {
     super.initState();
@@ -24,8 +26,8 @@ class _SurveyScreenState extends State<SurveyScreen> {
 
   Future<void> loadSurveys({bool refresh = false}) async {
     if (refresh) {
-      page = 0;
       surveys.clear();
+      page = 0;
       hasMore = true;
     }
 
@@ -40,24 +42,24 @@ class _SurveyScreenState extends State<SurveyScreen> {
     if (res == null) return;
 
     if (res['status'] == 1) {
-      final list = res['data'];
+      List list = res['data'];
 
-      if (list.length < 20) {
+      if (list.length < limit) {
         hasMore = false;
       }
 
       setState(() {
         surveys.addAll(list);
-        page += 20;
+        page += limit;
       });
     }
   }
 
-  Future<void> submitSurvey(int notifId, int option) async {
+  Future<void> submitSurvey(int surveyId, int option) async {
     setState(() => submitting = true);
 
     final res = await SurveyService().submitSurvey(
-      postId: notifId,
+      surveyId: surveyId,
       respondId: option,
     );
 
@@ -65,13 +67,22 @@ class _SurveyScreenState extends State<SurveyScreen> {
 
     if (res != null && res['status'] == 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['message'] ?? "")),
+        SnackBar(content: Text(res['message'])),
       );
       loadSurveys(refresh: true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res?['message'] ?? "Failed")),
       );
+    }
+  }
+
+  bool isExpired(String expiry) {
+    try {
+      final exp = DateTime.parse(expiry);
+      return exp.isBefore(DateTime.now());
+    } catch (_) {
+      return false;
     }
   }
 
@@ -91,7 +102,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
                     child: Text(
                       t.noSurveys,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -106,48 +119,82 @@ class _SurveyScreenState extends State<SurveyScreen> {
                       }
 
                       final s = surveys[index];
-                      final int notifId = s['notification_id'];
-                      final int selected = s['notify_response'] ?? 0;
+                      final int surveyId = s['id'];
+                      final int selected = s['respond_id'] ?? 0;
+                      final bool expired = isExpired(s['expiry_date']);
 
                       return Card(
-                        margin: const EdgeInsets.all(12),
-                        color: cs.primary.withOpacity(0.07),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      s['survey_question'],
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
                               Text(
-                                s['survey_question'] ?? "",
+                                "Expiry: ${s['expiry_date']}",
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
+                                  color: expired ? Colors.red : cs.primary,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              for (int i = 1; i <= 4; i++)
-                                if (s['survey_option$i'] != null &&
-                                    s['survey_option$i']
-                                        .toString()
-                                        .trim()
-                                        .isNotEmpty)
-                                  RadioListTile<int>(
-                                    value: i,
-                                    groupValue: selected,
-                                    onChanged: selected == 0 && !submitting
-                                        ? (v) => submitSurvey(notifId, i)
-                                        : null,
-                                    activeColor: cs.primary,
-                                    title: Text(s['survey_option$i']),
-                                  ),
-                              const SizedBox(height: 4),
-                              if (selected != 0)
-                                Text(
-                                  t.alreadyResponded,
+                              const SizedBox(height: 16),
+                              if (expired)
+                                const Text(
+                                  "Survey expired",
                                   style: TextStyle(
-                                    color: Colors.green.shade700,
+                                    color: Colors.red,
                                     fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              else
+                                Column(
+                                  children: [
+                                    for (int i = 1; i <= 4; i++)
+                                      if (s["survey_option$i"] != null &&
+                                          s["survey_option$i"]
+                                              .toString()
+                                              .trim()
+                                              .isNotEmpty)
+                                        RadioListTile<int>(
+                                          value: i,
+                                          groupValue: selected,
+                                          onChanged: selected == 0 &&
+                                                  !submitting
+                                              ? (v) => submitSurvey(surveyId, i)
+                                              : null,
+                                          title: Text(s["survey_option$i"]),
+                                        ),
+                                  ],
+                                ),
+                              if (selected != 0 && !expired)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(
+                                    t.alreadyResponded,
+                                    style: TextStyle(
+                                      color: Colors.green.shade800,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                             ],
