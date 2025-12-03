@@ -45,8 +45,6 @@ dependencies:
   flutter_html: ^3.0.0
   flutter_inappwebview: ^6.1.5
 
-  
-
   # For translation (English ↔ Tamil)
   flutter_localizations:
     sdk: flutter

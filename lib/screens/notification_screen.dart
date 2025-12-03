@@ -111,13 +111,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
     _currentReadText = text;
     _isPaused = false;
 
-    await _flutterTts.setLanguage("en-IN");
     await _flutterTts.setPitch(1.0);
 
-    setState(() {
-      _isSpeaking = true;
-    });
+    // Default: English reading for numbers, dates, symbols
+    await _flutterTts.setLanguage("en-IN");
 
+    // Detect Tamil text
+    final containsTamil = RegExp(r'[\u0B80-\u0BFF]').hasMatch(text);
+
+    if (containsTamil) {
+      await _flutterTts
+          .setVoice({"name": "ta-in-x-tac-network", "locale": "ta-IN"});
+    }
+
+    setState(() => _isSpeaking = true);
     await _flutterTts.speak(text);
   }
 

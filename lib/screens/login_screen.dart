@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // IMPORTANT: Sync topics + save topics_subscribed in DB
-      await HomeService.syncHomeContents();
+      // await HomeService.syncHomeContents();
 
       Navigator.pushReplacement(
         context,

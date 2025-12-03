@@ -38,9 +38,21 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
   String _activeWord = "";
   ScrollController _readScroll = ScrollController();
 
+  // ADD THIS FUNCTION HERE
+  void debugTamilVoices() async {
+    final voices = await _flutterTts.getVoices;
+    for (final v in voices) {
+      if (v['locale'] == 'ta-IN') {
+        print('Tamil voice: $v');
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+
+    debugTamilVoices();
 
     settingsBox = Hive.box('settings');
     _loadSMS();
@@ -83,11 +95,20 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
     _currentReadText = text;
     _isPaused = false;
 
-    await _flutterTts.setLanguage("en-IN");
     await _flutterTts.setPitch(1.0);
 
-    setState(() => _isSpeaking = true);
+    // Default: English reading for numbers, dates, symbols
+    await _flutterTts.setLanguage("en-IN");
 
+    // Detect Tamil text
+    final containsTamil = RegExp(r'[\u0B80-\u0BFF]').hasMatch(text);
+
+    if (containsTamil) {
+      await _flutterTts
+          .setVoice({"name": "ta-in-x-tac-network", "locale": "ta-IN"});
+    }
+
+    setState(() => _isSpeaking = true);
     await _flutterTts.speak(text);
   }
 
