@@ -36,9 +36,11 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   }
 
   Future<void> _loadHomeworks() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       final data = await _service.getHomeworks(date: _selectedDate);
+      if (!mounted) return;
       setState(() => _homeworks = data);
 
       for (final hw in data) {
@@ -51,6 +53,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
         SnackBar(content: Text("Error loading homeworks: $e")),
       );
     } finally {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }

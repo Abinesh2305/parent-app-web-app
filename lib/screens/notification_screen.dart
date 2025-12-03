@@ -73,11 +73,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     });
 
     _flutterTts.setProgressHandler((text, start, end, word) {
+      if (!mounted) return;
       setState(() {
         _activeWord = word;
       });
-
-      _autoScrollToWord(word);
     });
   }
 
@@ -180,10 +179,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Future<void> _loadCategoryColors() async {
     try {
       final response = await NotificationService().getCategories();
+      if (!mounted) return;
+
       if (response.isNotEmpty) {
         setState(() {
           _categoryColors = {
-            for (var cat in response) cat['id']: cat['text_color']
+            for (var cat in response)
+              cat['id']: (cat['text_color'] ?? "#007BFF") // safe fallback
           };
         });
       }
@@ -206,6 +208,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             (item['request_acknowledge']?.toString() ?? '0');
       }
 
+      if (!mounted) return;
       setState(() {
         _notifications = data;
         _filteredNotifications = data;
@@ -248,6 +251,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         search: _searchController.text,
       );
 
+      if (!mounted) return;
       setState(() {
         _notifications = data;
         _filteredNotifications = data;
@@ -311,6 +315,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
             // Safety: re-fetch categories inside if needed
             if (loading) {
               NotificationService().getCategories().then((response) {
+                if (!mounted) return;
+
                 setModalState(() {
                   categories = response;
                   loading = false;

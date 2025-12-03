@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:school_dashboard/services/fcm_helper.dart';
 import 'package:school_dashboard/services/home_service.dart';
+import 'screens/splash_screen.dart';
 
 // Global navigator key for navigation even when app is not in foreground
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -77,7 +78,10 @@ Future<void> main() async {
   String savedTheme = box.get('themeMode', defaultValue: 'system');
   String savedLanguage = box.get('language', defaultValue: 'en');
 
-  runApp(MyApp(savedTheme: savedTheme, savedLanguage: savedLanguage));
+  runApp(SplashWrapper(
+    savedTheme: savedTheme,
+    savedLanguage: savedLanguage,
+  ));
 }
 
 /// Shared logic to switch user and open notification tab
@@ -169,6 +173,32 @@ Future<void> _handleUserAndNavigate(RemoteMessage? message) async {
     ),
     (route) => false,
   );
+}
+
+class SplashWrapper extends StatelessWidget {
+  final String savedTheme;
+  final String savedLanguage;
+
+  const SplashWrapper({
+    super.key,
+    required this.savedTheme,
+    required this.savedLanguage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/launch': (context) => MyApp(
+              savedTheme: savedTheme,
+              savedLanguage: savedLanguage,
+            ),
+      },
+    );
+  }
 }
 
 class MyApp extends StatefulWidget {

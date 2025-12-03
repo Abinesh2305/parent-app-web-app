@@ -45,23 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final box = Hive.box('settings');
       final user = box.get('user');
-      if (user == null) {
-        print("⚠️ No user found in Hive");
-        return;
-      }
-
-      final userId = user['id']?.toString();
-      _currentUserId = userId;
-
-      setState(() {
-        _loading = true;
-        todayStatus = '';
-        attendancePercent = 0.0;
-      });
+      if (user == null) return;
 
       final now = DateTime.now();
       final monthYear = "${now.year}-${now.month.toString().padLeft(2, '0')}";
+
       final data = await AttendanceService().getAttendance(monthYear);
+
+      if (!mounted) return; // <-- IMPORTANT
 
       if (data != null) {
         final today = _formatDate(now);
@@ -80,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
           status = 'Absent';
         }
 
+        if (!mounted) return;
         setState(() {
           todayStatus = status;
           attendancePercent =
@@ -87,10 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _loading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() => _loading = false);
       }
     } catch (e) {
-      print("⚠️ Error loading attendance data: $e");
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
