@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../main.dart';
+import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,13 +15,26 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 9), () async {
-      final box = Hive.box('settings');
-      await box.put('is_first_launch', false);
+    Future.delayed(const Duration(seconds: 8), () async {
+      if (!mounted) return;
 
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/launch');
-      }
+      final box = Hive.box('settings');
+      final user = box.get('user');
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => user == null
+              ? LoginScreen(
+                  onToggleTheme: () {},
+                  onToggleLanguage: () {},
+                )
+              : MainNavigationScreen(
+                  onToggleTheme: () {},
+                  onToggleLanguage: () {},
+                ),
+        ),
+      );
     });
   }
 

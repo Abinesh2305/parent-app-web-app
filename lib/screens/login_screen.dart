@@ -6,6 +6,7 @@ import '../main.dart';
 import 'forgot_password_screen.dart';
 import 'change_password_screen.dart';
 import 'package:school_dashboard/services/home_service.dart';
+import 'splash_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -80,15 +81,36 @@ class _LoginScreenState extends State<LoginScreen> {
       // IMPORTANT: Sync topics + save topics_subscribed in DB
       // await HomeService.syncHomeContents();
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MainNavigationScreen(
-            onToggleTheme: widget.onToggleTheme,
-            onToggleLanguage: widget.onToggleLanguage,
-          ),
-        ),
-      );
+      if (response['success']) {
+        if (rememberMe) {
+          var box = Hive.box('settings');
+          box.put('saved_email', emailController.text);
+          box.put('saved_password', passwordController.text);
+        }
+
+        final box = Hive.box('settings');
+        final bool isFirstLaunch =
+            box.get('is_first_launch', defaultValue: true);
+
+        if (isFirstLaunch) {
+          await box.put('is_first_launch', false);
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const SplashScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MainNavigationScreen(
+                onToggleTheme: widget.onToggleTheme,
+                onToggleLanguage: widget.onToggleLanguage,
+              ),
+            ),
+          );
+        }
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(response['message'] ?? t.loginFailed)),

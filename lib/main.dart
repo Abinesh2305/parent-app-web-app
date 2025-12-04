@@ -147,23 +147,9 @@ class SplashWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final box = Hive.box('settings');
-    final bool isFirstLaunch = box.get('is_first_launch', defaultValue: true);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      routes: {
-        '/launch': (_) => MyApp(
-              savedTheme: savedTheme,
-              savedLanguage: savedLanguage,
-            ),
-      },
-      home: isFirstLaunch
-          ? const SplashScreen()
-          : MyApp(
-              savedTheme: savedTheme,
-              savedLanguage: savedLanguage,
-            ),
+    return MyApp(
+      savedTheme: savedTheme,
+      savedLanguage: savedLanguage,
     );
   }
 }
@@ -316,7 +302,9 @@ class _LaunchDeciderState extends State<LaunchDecider> {
       );
     }
 
-    return Hive.box('settings').get('user') != null
+    final box = Hive.box('settings');
+
+    return box.get('user') != null
         ? MainNavigationScreen(
             onToggleTheme: widget.onToggleTheme,
             onToggleLanguage: widget.onToggleLanguage,
@@ -516,20 +504,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void _logoutUser() async {
     final box = Hive.box('settings');
+    final firstLaunch = box.get('is_first_launch', defaultValue: false);
+
     final user = box.get('user');
     final fcm = await FirebaseMessaging.instance.getToken();
-    if (user == null) return;
+    if (user != null) {
+      try {
+        await DioClient.dio.post('logout', data: {
+          'user_id': user['id'],
+          'fcm_token': fcm ?? '',
+          'device_id': 'device_001',
+          'device_type': 'ANDROID',
+        });
+      } catch (_) {}
+    }
 
-    try {
-      await DioClient.dio.post('logout', data: {
-        'user_id': user['id'],
-        'fcm_token': fcm ?? '',
-        'device_id': 'device_001',
-        'device_type': 'ANDROID',
-      });
-    } catch (_) {}
+    await box.clear();
+    await box.put('is_first_launch', firstLaunch);
 
-    box.clear();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
