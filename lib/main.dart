@@ -36,9 +36,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-
-  final box = await Hive.openBox('settings');
-  // box.put('pending_fcm', message.data); // store only data
+  await Hive.openBox('settings');
 }
 
 Future<void> main() async {
@@ -54,7 +52,6 @@ Future<void> main() async {
     sound: true,
   );
 
-  // Local notification setup
   const androidSettings =
       AndroidInitializationSettings('@drawable/notification_icon');
 
@@ -74,7 +71,7 @@ Future<void> main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  var box = Hive.box('settings');
+  final box = Hive.box('settings');
   String savedTheme = box.get('themeMode', defaultValue: 'system');
   String savedLanguage = box.get('language', defaultValue: 'en');
 
@@ -89,67 +86,30 @@ Future<void> _handleUserAndNavigate(RemoteMessage? message) async {
   final box = Hive.box('settings');
 
   final targetUserId = message?.data['target_user_id'];
-  final postId = message?.data['post_id'];
 
-  // Switch account if required
   if (targetUserId != null) {
     final linkedUsers = box.get('linked_users', defaultValue: []);
     final mainUser = box.get('user');
 
-    List<dynamic> allUsers = [];
+    List allUsers = [];
     if (mainUser != null) allUsers.add(mainUser);
     allUsers.addAll(linkedUsers);
 
-    // 1. Try to find user locally
     var targetUser = allUsers.firstWhere(
       (u) => u['id'].toString() == targetUserId.toString(),
       orElse: () => null,
     );
 
-    // 2. If not found -> fetch from server
-    if (targetUserId != null) {
-      final linkedUsers = box.get('linked_users', defaultValue: []);
-      final mainUser = box.get('user');
-
-      List<dynamic> allUsers = [];
-      if (mainUser != null) allUsers.add(mainUser);
-      allUsers.addAll(linkedUsers);
-
-      print("ALL USERS = ${allUsers.map((u) => u['id']).toList()}");
-      print("TARGET USER = $targetUserId");
-
-      var targetUser = allUsers.firstWhere(
-        (u) => u['id'].toString() == targetUserId.toString(),
-        orElse: () => null,
-      );
-
-      if (targetUser == null) {
-        print("TARGET NOT FOUND. Cannot switch.");
-      } else {
-        await box.put('token', targetUser['api_token']);
-        await box.put('user', targetUser);
-
-        await navigatorKey.currentState?.context
-            .findAncestorStateOfType<_MainNavigationScreenState>()
-            ?.resetFcmSubscriptions();
-
-        print("SWITCHED TO USER ${targetUser['id']}");
-      }
-    }
-
-    // 3. If still null -> cannot switch
     if (targetUser != null) {
       await box.put('token', targetUser['api_token']);
       await box.put('user', targetUser);
 
-      // Refresh FCM topics
       await navigatorKey.currentState?.context
           .findAncestorStateOfType<_MainNavigationScreenState>()
           ?.resetFcmSubscriptions();
     }
   }
 
-  // Decide where to navigate
   bool openHomework = false;
   bool openNotification = false;
 
@@ -187,16 +147,23 @@ class SplashWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final box = Hive.box('settings');
+    final bool isFirstLaunch = box.get('is_first_launch', defaultValue: true);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/launch': (context) => MyApp(
+        '/launch': (_) => MyApp(
               savedTheme: savedTheme,
               savedLanguage: savedLanguage,
             ),
       },
+      home: isFirstLaunch
+          ? const SplashScreen()
+          : MyApp(
+              savedTheme: savedTheme,
+              savedLanguage: savedLanguage,
+            ),
     );
   }
 }
@@ -229,7 +196,7 @@ class _MyAppState extends State<MyApp> {
   ThemeMode _getThemeFromHive(String theme) {
     if (theme == 'light') return ThemeMode.light;
     if (theme == 'dark') return ThemeMode.dark;
-    return ThemeMode.light; // fallback, NEVER return system
+    return ThemeMode.light;
   }
 
   Future<void> _setThemeMode(ThemeMode mode) async {
@@ -250,39 +217,26 @@ class _MyAppState extends State<MyApp> {
     String current = box.get('language', defaultValue: 'en');
     String newLang = current == 'en' ? 'ta' : 'en';
 
-    // update UI
-    setState(() {
-      _locale = Locale(newLang);
-    });
-
-    // save locally
+    setState(() => _locale = Locale(newLang));
     box.put('language', newLang);
 
-    // update user in Hive
     final user = box.get('user');
     if (user != null) {
       user['language'] = newLang;
       box.put('user', user);
     }
 
-    // update DB
     try {
       await DioClient.dio.post(
         'update-language',
-        data: {
-          'user_id': user?['id'],
-          'language': newLang,
-        },
+        data: {'user_id': user?['id'], 'language': newLang},
       );
     } catch (_) {}
 
-    // refresh entire app to apply new language
     navigatorKey.currentState?.pushReplacement(
       MaterialPageRoute(
         builder: (_) => LaunchDecider(
-          onToggleTheme: _toggleTheme,
-          onToggleLanguage: _toggleLanguage,
-        ),
+            onToggleTheme: _toggleTheme, onToggleLanguage: _toggleLanguage),
       ),
     );
   }
@@ -291,7 +245,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'CPL Demo School',
+      title: dotenv.env['APP_NAME'] ?? 'School Parent App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -341,21 +295,15 @@ class _LaunchDeciderState extends State<LaunchDecider> {
 
       if (info.updateAvailability == UpdateAvailability.updateAvailable &&
           info.immediateUpdateAllowed) {
-        // Call once only
         final result = await InAppUpdate.performImmediateUpdate();
 
         if (result == AppUpdateResult.success) {
           setState(() => waitingForUpdate = false);
-        } else {
-          // If user cancels: DO NOT continue the app
-          // Keep them stuck in the update flow
         }
       } else {
-        // No update → continue app
         setState(() => waitingForUpdate = false);
       }
-    } catch (e) {
-      // If update check fails, try again after restart. Do nothing here.
+    } catch (_) {
       setState(() => waitingForUpdate = false);
     }
   }
@@ -363,13 +311,11 @@ class _LaunchDeciderState extends State<LaunchDecider> {
   @override
   Widget build(BuildContext context) {
     if (waitingForUpdate) {
-      // Show a loader until update process ends
-      return Scaffold(
+      return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Proceed normally only if update didn't block
     return Hive.box('settings').get('user') != null
         ? MainNavigationScreen(
             onToggleTheme: widget.onToggleTheme,
@@ -415,22 +361,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
 
-    // _checkPendingFCM();
-
-    // ForceUpdateService.checkForUpdate(); // Google Force Update
-
-    // _subscribeToAllScholarTopics();
-
     resetFcmSubscriptions();
 
     if (widget.openNotificationTab) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _notificationClickHandler();
-      });
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _notificationClickHandler());
     } else if (widget.openLeaveTab) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _leaveClickHandler();
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _leaveClickHandler());
     } else if (widget.openFeesTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() => _currentIndex = 5);
@@ -478,26 +415,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _checkInitialMessage();
   }
 
-  // Future<void> _checkPendingFCM() async {
-  //   final box = Hive.box('settings');
-  //   final data = box.get('pending_fcm');
-
-  //   if (data != null) {
-  //     box.delete('pending_fcm');
-
-  //     await _handleUserAndNavigate(
-  //       RemoteMessage(data: Map<String, dynamic>.from(data)),
-  //     );
-  //   }
-  // }
-
   Future<void> _checkInitialMessage() async {
     await Future.delayed(const Duration(milliseconds: 300));
-
     final msg = await FirebaseMessaging.instance.getInitialMessage();
-    if (msg != null) {
-      await _handleNotificationClick(msg);
-    }
+    if (msg != null) await _handleNotificationClick(msg);
   }
 
   Future<void> _handleNotificationClick(RemoteMessage message) async {
@@ -513,25 +434,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final schoolId = mainUser['school_college_id'];
 
-    // Normalize user list
     final users = <Map<String, dynamic>>[];
     users.add(Map<String, dynamic>.from(mainUser));
     for (var u in linkedUsers) {
-      if (u is Map) {
-        users.add(Map<String, dynamic>.from(u));
-      }
+      if (u is Map) users.add(Map<String, dynamic>.from(u));
     }
 
-    // Remove duplicates by ID
     final uniqueUsers = {for (var u in users) u['id']: u}.values.toList();
 
-    // Unsubscribe old topics
     await FirebaseMessaging.instance
         .unsubscribeFromTopic("School_Scholars_$schoolId");
 
     for (var u in uniqueUsers) {
       final uid = u['id'];
-
       final details = (u['userdetails'] ?? {}) as Map;
 
       final sectionId = details['section_id'] ??
@@ -546,18 +461,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final groups = u['groups'] ?? [];
       for (var g in groups) {
         final gid = g['id'];
-        if (gid != null) {
+        if (gid != null)
           await FirebaseMessaging.instance.unsubscribeFromTopic("Group_$gid");
-        }
       }
     }
 
-    // Subscribe new topics
     await safeSubscribe("School_Scholars_$schoolId");
 
     for (var u in uniqueUsers) {
       final uid = u['id'];
-
       final details = (u['userdetails'] ?? {}) as Map;
 
       final sectionId = details['section_id'] ??
@@ -571,9 +483,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final groups = u['groups'] ?? [];
       for (var g in groups) {
         final gid = g['id'];
-        if (gid != null) {
-          await safeSubscribe("Group_$gid");
-        }
+        if (gid != null) await safeSubscribe("Group_$gid");
       }
     }
   }
@@ -595,11 +505,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void _onNavigate(int index) {
     setState(() => _currentIndex = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _pageController.animateToPage(index,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
   void _leaveClickHandler() {
@@ -620,9 +527,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         'device_id': 'device_001',
         'device_type': 'ANDROID',
       });
-    } catch (e) {
-      print("Logout error: $e");
-    }
+    } catch (_) {}
 
     box.clear();
     Navigator.pushAndRemoveUntil(
@@ -639,11 +544,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void _showUserSwitcher() async {
     final box = Hive.box('settings');
-    List<dynamic> scholars = box.get('linked_users', defaultValue: []);
+    List scholars = box.get('linked_users', defaultValue: []);
     final currentUser = box.get('user');
     String? selectedUserId = currentUser?['id']?.toString();
 
-    // Fetch from server if not cached
     if (scholars.isEmpty) {
       showDialog(
         context: context,
@@ -652,7 +556,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       );
 
       scholars = await UserService().getMobileScholars();
-      Navigator.pop(context); // close loading dialog
+      Navigator.pop(context);
 
       if (scholars.isNotEmpty) {
         await box.put('linked_users', scholars);
@@ -674,8 +578,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           builder: (context, setDialogState) {
             return Dialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+                  borderRadius: BorderRadius.circular(16)),
               insetPadding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               backgroundColor: Theme.of(context).colorScheme.surface,
@@ -684,7 +587,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -694,8 +596,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             .primary
                             .withOpacity(0.1),
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
+                            top: Radius.circular(16)),
                       ),
                       child: Text(
                         'Switch Student',
@@ -707,8 +608,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ),
                     ),
-
-                    // List of Students
                     Expanded(
                       child: ListView.builder(
                         shrinkWrap: true,
@@ -716,7 +615,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         itemBuilder: (context, index) {
                           final s = scholars[index];
                           final id = s['id']?.toString();
-                          final isSelected = id == selectedUserId;
                           final profileImage = s['is_profile_image'] ??
                               "https://www.clasteqsms.com/multischool/public/image/default.png";
 
@@ -726,23 +624,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             onChanged: (value) async {
                               if (value == null) return;
 
-                              setDialogState(() {
-                                selectedUserId = value;
-                              });
+                              setDialogState(() => selectedUserId = value);
 
-                              // write token first, then user to avoid watcher race
                               await box.put('token', s['api_token']);
                               await box.put('user', s);
 
-                              List<dynamic> linkedUsers =
+                              List linkedUsers =
                                   box.get('linked_users', defaultValue: []);
                               if (!linkedUsers.any((u) => u['id'] == s['id'])) {
                                 linkedUsers.add(s);
                                 await box.put('linked_users', linkedUsers);
                               }
 
-                              Navigator.pop(dialogContext); // close dialog
-                              setState(() {}); // refresh main UI
+                              Navigator.pop(dialogContext);
+                              setState(() {});
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -754,9 +649,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             },
                             title: Text(s['name'] ?? "Unknown"),
                             subtitle: Text(
-                              "Class: ${s['userdetails']['is_class_name'] ?? ''} • "
-                              "Section: ${s['userdetails']['is_section_name'] ?? ''}",
-                            ),
+                                "Class: ${s['userdetails']['is_class_name'] ?? ''} • Section: ${s['userdetails']['is_section_name'] ?? ''}"),
                             secondary: CircleAvatar(
                               radius: 22,
                               backgroundImage: NetworkImage(profileImage),
@@ -768,10 +661,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         },
                       ),
                     ),
-
                     const Divider(height: 1),
-
-                    // Close button
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextButton(
@@ -804,19 +694,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       HomeScreen(
         user: user,
         onTabChange: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
           _pageController.jumpToPage(index);
         },
       ),
-      // index 0 (default)
-      const HomeworkScreen(), // index 1
-      const NotificationScreen(), // index 2
-      MenuScreen(onLogout: _logoutUser), // index 3
-      const AttendanceScreen(), // index 4
-      const FeesScreen(), // index 5
-      const LeaveScreen(), // 6
+      const HomeworkScreen(),
+      const NotificationScreen(),
+      MenuScreen(onLogout: _logoutUser),
+      const AttendanceScreen(),
+      const FeesScreen(),
+      const LeaveScreen(),
     ];
 
     return WillPopScope(
@@ -839,12 +726,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       child: Scaffold(
         appBar: TopNavBar(
           studentName: studentName,
-          language: Hive.box('settings').get('language', defaultValue: 'en'),
+          language: box.get('language', defaultValue: 'en'),
           onSwitch: _showUserSwitcher,
           onProfileTap: () => _onNavigate(0),
-          // onLogout: _logoutUser,
           onTranslate: widget.onToggleLanguage,
-          onToggleTheme: widget.onToggleTheme, // ADDED
+          onToggleTheme: widget.onToggleTheme,
         ),
         body: PageView(
           controller: _pageController,
@@ -856,28 +742,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           currentIndex: _currentIndex,
           onTap: _onNavigate,
         ),
-        // floatingActionButton: FloatingActionButton(
-        //   mini: true,
-        //   onPressed: widget.onToggleTheme,
-        //   child: Icon(
-        //     Theme.of(context).brightness == Brightness.light
-        //         ? Icons.dark_mode
-        //         : Icons.light_mode,
-        //   ),
-        // ),
-      ),
-    );
-  }
-
-  Widget _placeholder(String title, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80),
-          const SizedBox(height: 12),
-          Text(title),
-        ],
       ),
     );
   }

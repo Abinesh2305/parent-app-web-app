@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,7 +13,10 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 11), () {
+    Future.delayed(const Duration(seconds: 9), () async {
+      final box = Hive.box('settings');
+      await box.put('is_first_launch', false);
+
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/launch');
       }
@@ -23,10 +27,12 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SizedBox.expand(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: Image.asset('assets/clasteq_loading.gif'),
+      body: Center(
+        child: Image.asset(
+          'assets/clasteq_loading.gif',
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          fit: BoxFit.contain,
         ),
       ),
     );
