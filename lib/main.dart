@@ -45,6 +45,7 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
   await Hive.openBox('settings');
+  await Hive.openBox('pending_reads');
 
   await FirebaseMessaging.instance.requestPermission(
     alert: true,

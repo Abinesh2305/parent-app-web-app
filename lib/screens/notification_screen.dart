@@ -19,6 +19,7 @@ import '../widgets/image_preview.dart';
 import '../helpers/youtube_utils.dart';
 import '../widgets/html_message_view.dart';
 import '../widgets/tts_controls.dart';
+import 'dart:async';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -78,6 +79,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _activeWord = word;
       });
     });
+
+    // Sync pending reads every 60 minutes
+    Timer.periodic(const Duration(minutes: 60), (_) {
+      _syncPendingReads();
+    });
+  }
+
+  Future<void> _syncPendingReads() async {
+    try {
+      final readBox = Hive.box('pending_reads');
+      if (readBox.isEmpty) return;
+
+      final pendingReads = Map<String, String>.from(readBox.toMap());
+
+      // Send pending reads to server
+      await NotificationService().syncReadStatus(pendingReads);
+
+      // Clear local cache after successful sync
+      await readBox.clear();
+    } catch (e) {
+      debugPrint('Failed to sync pending reads: $e');
+    }
   }
 
   @override
@@ -158,9 +181,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (postId == null) return;
     if (_markedReadOnce.contains(postId)) return;
 
+    final readBox = Hive.box('pending_reads');
+
+    void _saveReadLocally(int postId) {
+      readBox.put(postId.toString(), DateTime.now().toString());
+    }
+
     _markedReadOnce.add(postId);
 
-    await NotificationService().markAsRead(postId);
+    _saveReadLocally(postId);
 
     setState(() {
       for (var n in _notifications) {
@@ -1120,6 +1149,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                                           100,
                                                                       fit: BoxFit
                                                                           .cover,
+                                                                      errorBuilder: (context,
+                                                                          error,
+                                                                          stack) {
+                                                                        return Container(
+                                                                          width:
+                                                                              100,
+                                                                          height:
+                                                                              100,
+                                                                          color:
+                                                                              Colors.grey[300],
+                                                                          child:
+                                                                              Center(child: Text("No Image")),
+                                                                        );
+                                                                      },
                                                                     ),
                                                                   ),
                                                                 ),

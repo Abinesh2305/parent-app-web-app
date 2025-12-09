@@ -191,4 +191,50 @@ class NotificationService {
       return false;
     }
   }
+
+  Future<bool> saveBatchRead(List<dynamic> postIds) async {
+    final box = Hive.box('settings');
+    final user = box.get('user');
+    final token = box.get('token');
+
+    if (user == null || token == null) return false;
+
+    final body = {
+      "user_id": user['id'],
+      "api_token": token,
+      "post_ids": postIds,
+    };
+
+    final response = await _dio.post(
+      "admin/communication/batch-mark-read",
+      data: body,
+      options: Options(headers: {'x-api-key': token}),
+    );
+
+    return response.statusCode == 200 && response.data['status'] == 1;
+  }
+
+  Future<bool> syncReadStatus(Map<String, String> pendingReads) async {
+    final box = Hive.box('settings');
+    final user = box.get('user');
+    final token = box.get('token');
+
+    if (user == null || token == null) return false;
+
+    final postIds = pendingReads.keys.toList();
+
+    final body = {
+      "user_id": user['id'],
+      "api_token": token,
+      "post_ids": postIds,
+    };
+
+    final response = await _dio.post(
+      'admin/communication/batch-mark-read',
+      data: body,
+      options: Options(headers: {'x-api-key': token}),
+    );
+
+    return response.statusCode == 200 && response.data['status'] == 1;
+  }
 }

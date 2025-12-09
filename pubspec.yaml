@@ -1,7 +1,7 @@
 name: school_dashboard
 description: A professional school parent Flutter application
 publish_to: 'none'
-version: 3.1.18+35
+version: 3.1.20+37
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -55,7 +55,7 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
-  generate: true   # ✅ Must be here, at the root under flutter:
+  generate: true   # Must be here, at the root under flutter:
   uses-material-design: true
   
   assets:
