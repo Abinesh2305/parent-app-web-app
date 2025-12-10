@@ -25,6 +25,7 @@ import 'package:in_app_update/in_app_update.dart';
 import 'package:school_dashboard/services/fcm_helper.dart';
 import 'package:school_dashboard/services/home_service.dart';
 import 'screens/splash_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // Global navigator key for navigation even when app is not in foreground
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -273,7 +274,28 @@ class _LaunchDeciderState extends State<LaunchDecider> {
   @override
   void initState() {
     super.initState();
-    _checkGoogleUpdate();
+    _handleVersionReset();
+    final box = Hive.box('settings');
+    final alreadyRequested = box.get('updateRequested', defaultValue: false);
+
+    if (!alreadyRequested) {
+      _checkGoogleUpdate();
+    } else {
+      setState(() => waitingForUpdate = false);
+    }
+  }
+
+  Future<void> _handleVersionReset() async {
+    final box = Hive.box('settings');
+    final storedVersion = box.get('lastVersion', defaultValue: '0');
+
+    final info = await PackageInfo.fromPlatform();
+    final currentVersion = info.version;
+
+    if (currentVersion != storedVersion) {
+      await box.put('updateRequested', false);
+      await box.put('lastVersion', currentVersion);
+    }
   }
 
   Future<void> _checkGoogleUpdate() async {
@@ -282,6 +304,9 @@ class _LaunchDeciderState extends State<LaunchDecider> {
 
       if (info.updateAvailability == UpdateAvailability.updateAvailable &&
           info.immediateUpdateAllowed) {
+        final box = Hive.box('settings');
+        await box.put('updateRequested', true);
+
         final result = await InAppUpdate.performImmediateUpdate();
 
         if (result == AppUpdateResult.success) {
