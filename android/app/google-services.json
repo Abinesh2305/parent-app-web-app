@@ -1,0 +1,352 @@
+{
+  "project_info": {
+    "project_number": "544912086",
+    "project_id": "classtech-72e27",
+    "storage_bucket": "classtech-72e27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:d527594abee42d8125cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.abuschool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:c4716eeeafab153725cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:8dd0d67293f4ccf625cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.clasteqdemo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:ea8ba31454bc3f1225cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.fatima"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:d23b81cdd50cb0fd25cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.fsse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:c4e627a7a953877d25cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.imaculatepondy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:f9697efb6fe2b48f25cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.immaculate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:eafd3a6e223534ed25cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.immaculate_college_for_women"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:2321e548b778b66925cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.multischoolbeta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:9a4e0c90472787c325cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.sfsalangayam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:612cf6c0f9822e0925cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.sfspudukottai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:eaab683ea854525325cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.stanne"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:ddbf1a1181d49cdd25cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.stanneghss"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:9ff287298dae8bc925cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.stannesnps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:199c472cf0a5c43725cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.stmarys"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:cf0f9ef94b77f53125cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.stpaul"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:68b17e12e300935525cf77",
+        "android_client_info": {
+          "package_name": "com.clasteq.uppalam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544912086:android:bbbb4216b273a16d25cf77",
+        "android_client_info": {
+          "package_name": "com.example.school_parent_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-TXCXFiUHMOmmQO9snzKitrxnb90Vbrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

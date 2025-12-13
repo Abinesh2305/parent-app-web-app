@@ -1,0 +1,25 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "classtech-72e27",
+                    "appId": "1:544912086:android:bbbb4216b273a16d25cf77",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "classtech-72e27",
+                    "configurations": {
+                        "android": "1:544912086:android:bbbb4216b273a16d25cf77",
+                        "ios": "1:544912086:ios:016e71bc8a72cfd225cf77",
+                        "macos": "1:544912086:ios:016e71bc8a72cfd225cf77",
+                        "web": "1:544912086:web:a109a2685c65427925cf77",
+                        "windows": "1:544912086:web:a314a037f04c8e4925cf77"
+                    }
+                }
+            }
+        }
+    }
+}
