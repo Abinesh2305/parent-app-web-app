@@ -39,7 +39,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Map<int, String> _categoryColors = {};
 
-  Set<int> _markedReadOnce = {};
+  final Set<int> _markedReadOnce = {};
 
   DateTime? _selectedFromDate;
   DateTime? _selectedToDate;
@@ -99,15 +99,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Clear local cache after successful sync
       await readBox.clear();
     } catch (_) {
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Your internet is slow or unavailable. Please try again."),
-      ),
-    );
-  }
-}
-
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text("Your internet is slow or unavailable. Please try again."),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -190,13 +190,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     final readBox = Hive.box('pending_reads');
 
-    void _saveReadLocally(int postId) {
+    void saveReadLocally(int postId) {
       readBox.put(postId.toString(), DateTime.now().toString());
     }
 
     _markedReadOnce.add(postId);
 
-    _saveReadLocally(postId);
+    saveReadLocally(postId);
 
     setState(() {
       for (var n in _notifications) {
@@ -251,15 +251,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _loading = false;
       });
     } catch (_) {
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Your internet is slow or unavailable. Please try again."),
-      ),
-    );
-  }
-}
-
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text("Your internet is slow or unavailable. Please try again."),
+          ),
+        );
+      }
+    }
   }
 
   void _filterSearch(String query) {
@@ -296,15 +296,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _loading = false;
       });
     } catch (_) {
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Your internet is slow or unavailable. Please try again."),
-      ),
-    );
-  }
-}
-
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text("Your internet is slow or unavailable. Please try again."),
+          ),
+        );
+      }
+    }
   }
 
   void _openFilterModal() async {
@@ -505,7 +505,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 value: cat,
                                 child: Text(cat['name'] ?? 'Unnamed'),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -1171,7 +1171,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                                           color:
                                                                               Colors.grey[300],
                                                                           child:
-                                                                              Center(child: Text("No Image")),
+                                                                              const Center(child: Text("No Image")),
                                                                         );
                                                                       },
                                                                     ),

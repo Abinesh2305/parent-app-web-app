@@ -5,7 +5,6 @@ import '../services/auth_service.dart';
 import '../main.dart';
 import 'forgot_password_screen.dart';
 import 'change_password_screen.dart';
-import 'package:school_dashboard/services/home_service.dart';
 import 'splash_screen.dart';
 
 class LoginScreen extends StatefulWidget {

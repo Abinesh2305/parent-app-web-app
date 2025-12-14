@@ -30,7 +30,7 @@ class ImagePreview {
               right: 20,
               top: 20,
               child: IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),

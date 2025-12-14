@@ -33,7 +33,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Map<int, String> _categoryColors = {};
 
-  Set<int> _markedReadOnce = {};
+  final Set<int> _markedReadOnce = {};
 
   DateTime? _selectedFromDate;
   DateTime? _selectedToDate;
@@ -45,7 +45,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   bool _isSpeaking = false;
 
   String _activeWord = "";
-  ScrollController _readScroll = ScrollController();
+  final ScrollController _readScroll = ScrollController();
 
   @override
   void initState() {
@@ -343,7 +343,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     Text(
                       t.filterNotification,
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
 
                     const SizedBox(height: 16),
@@ -426,7 +426,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 value: cat,
                                 child: Text(cat['name'] ?? 'Unnamed'),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -602,9 +602,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         onChanged: _filterSearch,
                         decoration: InputDecoration(
                           hintText: t.searchNotifications,
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: const Icon(Icons.search),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
+                          contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 14),
                         ),
                         style: TextStyle(color: colorScheme.onSurface),
@@ -651,7 +651,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 final category =
                                     n['post_category'] ?? 'General';
                                 final categoryId = n['category_id'] ?? 0;
-                                final textColorHex =
+                                const textColorHex =
                                     // _categoryColors[categoryId] ?? "#007BFF";
                                     "#007BFF";
 
@@ -863,7 +863,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           MainAxisSize.min,
                                                       children: [
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.volume_up),
                                                           onPressed: () =>
                                                               _readAloud(
@@ -872,14 +872,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         ),
                                                         IconButton(
                                                           icon:
-                                                              Icon(Icons.pause),
+                                                              const Icon(Icons.pause),
                                                           onPressed: _isSpeaking
                                                               ? _pauseReading
                                                               : null,
                                                           tooltip: "Pause",
                                                         ),
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.play_arrow),
                                                           onPressed: _isPaused
                                                               ? _resumeReading
@@ -888,7 +888,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         ),
                                                         IconButton(
                                                           icon:
-                                                              Icon(Icons.stop),
+                                                              const Icon(Icons.stop),
                                                           onPressed:
                                                               _isSpeaking ||
                                                                       _isPaused
@@ -897,7 +897,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           tooltip: "Stop",
                                                         ),
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.refresh),
                                                           onPressed:
                                                               _currentReadText

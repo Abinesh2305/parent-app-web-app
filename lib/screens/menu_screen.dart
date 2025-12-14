@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/screens/sms/sms_communications_screen.dart';
 import '../main.dart';
-import '../main.dart' show MainNavigationScreen;
 import '../screens/exam_screen.dart';
 import '../screens/leave_screen.dart';
 import '../screens/profile_screen.dart';

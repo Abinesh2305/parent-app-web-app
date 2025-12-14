@@ -120,7 +120,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     labelText: "New Password",
                     prefixIcon: const Icon(Icons.lock_outline),
                     filled: true,
-                    fillColor: colors.surfaceVariant.withOpacity(0.3),
+                    fillColor: colors.surfaceContainerHighest.withOpacity(0.3),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -155,7 +155,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     labelText: "Confirm Password",
                     prefixIcon: const Icon(Icons.lock_outline),
                     filled: true,
-                    fillColor: colors.surfaceVariant.withOpacity(0.3),
+                    fillColor: colors.surfaceContainerHighest.withOpacity(0.3),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,

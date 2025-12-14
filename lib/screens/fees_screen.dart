@@ -213,7 +213,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      AppLocalizations.of(context)!.dueDate + ": $dueDate",
+                      "${AppLocalizations.of(context)!.dueDate}: $dueDate",
                       style: TextStyle(color: Colors.grey[700], fontSize: 13),
                     ),
                   ),

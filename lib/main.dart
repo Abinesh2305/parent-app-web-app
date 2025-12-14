@@ -475,8 +475,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final groups = u['groups'] ?? [];
       for (var g in groups) {
         final gid = g['id'];
-        if (gid != null)
+        if (gid != null) {
           await FirebaseMessaging.instance.unsubscribeFromTopic("Group_$gid");
+        }
       }
     }
 

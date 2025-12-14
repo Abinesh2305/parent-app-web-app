@@ -18,7 +18,7 @@ class BottomNavBar extends StatelessWidget {
 
     // Full item list — Profile is logical index 0 (hidden)
     final allItems = [
-      _HiddenNavItem(), // index 0 = Profile (not displayed)
+      const _HiddenNavItem(), // index 0 = Profile (not displayed)
       _NavItem(icon: Icons.book, label: t.homework), // 1
       _NavItem(icon: Icons.notifications, label: t.notifications), // 2
       _NavItem(icon: Icons.grid_view, label: t.menu, isCenter: true), // 3

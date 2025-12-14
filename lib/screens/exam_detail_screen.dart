@@ -110,7 +110,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen>
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        headingRowColor: MaterialStateProperty.all(cs.surfaceVariant),
+        headingRowColor: WidgetStateProperty.all(cs.surfaceContainerHighest),
         columns: [
           DataColumn(label: Text(t.subject)),
           DataColumn(label: Text(t.dateLabel)),

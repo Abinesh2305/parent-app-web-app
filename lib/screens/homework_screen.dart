@@ -277,7 +277,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                           ),
-                                          child: Text(
+                                          child: const Text(
                                             "Acknowledged",
                                             style: TextStyle(
                                               color: Colors.green,
@@ -307,7 +307,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                               );
                                             }
                                           },
-                                          child: Text("Acknowledge"),
+                                          child: const Text("Acknowledge"),
                                         ),
                                 ),
                               if (allAttachments.isNotEmpty)

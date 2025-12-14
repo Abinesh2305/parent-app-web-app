@@ -110,7 +110,7 @@ class _ExamScreenState extends State<ExamScreen>
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 6,
@@ -200,7 +200,7 @@ class _ExamScreenState extends State<ExamScreen>
                     Divider(color: cs.onSurface.withOpacity(0.15), height: 1),
                   ],
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),

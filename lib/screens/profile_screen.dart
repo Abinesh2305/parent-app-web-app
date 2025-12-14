@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 

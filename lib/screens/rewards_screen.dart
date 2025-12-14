@@ -119,7 +119,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? cs.surfaceVariant.withOpacity(0.35)
+                              ? cs.surfaceContainerHighest.withOpacity(0.35)
                               : cs.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -127,10 +127,10 @@ class _RewardsScreenState extends State<RewardsScreen> {
                           ),
                           boxShadow: [
                             if (!isDark)
-                              BoxShadow(
+                              const BoxShadow(
                                 color: Colors.black12,
                                 blurRadius: 6,
-                                offset: const Offset(0, 3),
+                                offset: Offset(0, 3),
                               ),
                           ],
                         ),

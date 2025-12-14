@@ -120,7 +120,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     labelText: t.mobileLabel,
                     hintText: 'Enter mobile number',
                     filled: true,
-                    fillColor: colors.surfaceVariant.withOpacity(0.3),
+                    fillColor: colors.surfaceContainerHighest.withOpacity(0.3),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -159,9 +159,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                        : Text(
+                        : const Text(
                             'Send OTP',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

@@ -24,16 +24,16 @@ class TtsControls extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        IconButton(icon: Icon(Icons.volume_up), onPressed: onStart),
+        IconButton(icon: const Icon(Icons.volume_up), onPressed: onStart),
         IconButton(
-            icon: Icon(Icons.pause), onPressed: isSpeaking ? onPause : null),
+            icon: const Icon(Icons.pause), onPressed: isSpeaking ? onPause : null),
         IconButton(
-            icon: Icon(Icons.play_arrow),
+            icon: const Icon(Icons.play_arrow),
             onPressed: isPaused ? onResume : null),
         IconButton(
-            icon: Icon(Icons.stop),
+            icon: const Icon(Icons.stop),
             onPressed: isSpeaking || isPaused ? onStop : null),
-        IconButton(icon: Icon(Icons.refresh), onPressed: onRestart),
+        IconButton(icon: const Icon(Icons.refresh), onPressed: onRestart),
       ],
     );
   }
