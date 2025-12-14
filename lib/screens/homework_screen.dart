@@ -4,7 +4,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/services/homework_service.dart';
 import 'package:open_filex/open_filex.dart';

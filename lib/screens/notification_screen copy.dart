@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'video_full_screen.dart';
 import '../widgets/audio_player_widget.dart';
 import 'package:flutter_tts/flutter_tts.dart';
