@@ -37,11 +37,11 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
           if (showProfileButton)
             IconButton(
               onPressed: onProfileTap,
-              icon: Icon(Icons.home, color: Colors.white),
+              icon: const Icon(Icons.home, color: Colors.white),
             ),
           IconButton(
             onPressed: onSwitch,
-            icon: Icon(Icons.swap_horiz, color: Colors.white),
+            icon: const Icon(Icons.swap_horiz, color: Colors.white),
           ),
         ],
       ),
@@ -76,7 +76,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: Text(
             language == 'ta' ? 'A' : 'த',
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -89,5 +89,5 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

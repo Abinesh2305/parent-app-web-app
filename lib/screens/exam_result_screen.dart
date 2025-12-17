@@ -57,7 +57,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     final cleaned = marks.map((m) {
       final subject = m["subject_name"] ?? m["subject"] ?? "";
       final maxMarks = m["max_marks"] ?? m["total"] ?? m["total_marks"] ?? 0;
-      final obtained = m["obtained_marks"] ?? m["marks"] ?? null;
+      final obtained = m["obtained_marks"] ?? m["marks"];
 
       final isAbsent =
           (m["is_absent"] == 1) || obtained == null || (m["absent"] == 1);
@@ -277,7 +277,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   Widget _buildTotalRow(
       int obtained, int max, ColorScheme cs, AppLocalizations t) {
     return Container(
-      color: cs.surfaceVariant,
+      color: cs.surfaceContainerHighest,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [

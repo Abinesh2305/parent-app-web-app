@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
-import 'package:school_dashboard/screens/sms/sms_communications_screen.dart';
+
 import '../main.dart';
-import '../main.dart' show MainNavigationScreen;
+import '../screens/profile_screen.dart';
 import '../screens/exam_screen.dart';
 import '../screens/leave_screen.dart';
-import '../screens/profile_screen.dart';
-import 'package:auto_size_text/auto_size_text.dart';
-import '../screens/placeholder_screen.dart';
 import '../screens/survey_screen.dart';
 import '../screens/gallery_screen.dart';
 import '../screens/rewards_screen.dart';
 import '../screens/contacts_screen.dart';
+import '../screens/placeholder_screen.dart';
+import '../screens/sms/sms_communications_screen.dart';
+import 'upload_document_screen.dart';
+import '../screens/download_document_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   final VoidCallback onLogout;
@@ -26,74 +28,42 @@ class MenuScreen extends StatelessWidget {
 
     final List<Map<String, dynamic>> menuItems = [
       {'icon': Icons.person_outline, 'label': t.profile, 'action': 'profile'},
-      {
-        'icon': Icons.notifications_none,
-        'label': t.notifications,
-        'action': 'notifications'
-      },
-      {
-        'icon': Icons.calendar_today_outlined,
-        'label': t.leaveManagement,
-        'action': 'leave'
-      },
+      {'icon': Icons.notifications_none, 'label': t.notifications, 'action': 'notifications'},
+      {'icon': Icons.calendar_today_outlined, 'label': t.leaveManagement, 'action': 'leave'},
       {'icon': Icons.fact_check_outlined, 'label': t.exams, 'action': 'exams'},
       {'icon': Icons.currency_rupee, 'label': t.fees, 'action': 'fees'},
       {'icon': Icons.book_outlined, 'label': t.homework, 'action': 'homework'},
-      {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms_communications'},
-      {
-        'icon': Icons.calendar_month,
-        'label': t.attendance,
-        'action': 'attendance'
-      },
-
-      // New Menus
+      {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms'},
+      {'icon': Icons.calendar_month, 'label': t.attendance, 'action': 'attendance'},
       {'icon': Icons.poll_outlined, 'label': t.survey, 'action': 'survey'},
-      {
-        'icon': Icons.photo_library_outlined,
-        'label': t.gallery,
-        'action': 'gallery'
-      },
-      {
-        'icon': Icons.workspace_premium_outlined,
-        'label': t.rewarsRemarkmenu,
-        'action': 'rewards'
-      },
-
-      {
-        'icon': Icons.event_note_outlined,
-        'label': t.events,
-        'action': 'events'
-      },
-      {
-        'icon': Icons.contact_phone_outlined,
-        'label': t.schoolContacts,
-        'action': 'contacts'
-      },
+      {'icon': Icons.photo_library_outlined, 'label': t.gallery, 'action': 'gallery'},
+      {'icon': Icons.workspace_premium_outlined, 'label': t.rewarsRemarkmenu, 'action': 'rewards'},
+      {'icon': Icons.event_note_outlined, 'label': t.events, 'action': 'events'},
+      {'icon': Icons.contact_phone_outlined, 'label': t.schoolContacts, 'action': 'contacts'},
+      {'icon': Icons.upload_file, 'label': t.documents, 'action': 'upload_documents'},
+      //{'icon': Icons.download, 'label': t.downloaddocuments, 'action': 'download_documents'},
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(t.menuTitle),
-      ),
+      appBar: AppBar(title: Text(t.menuTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.builder(
+          itemCount: menuItems.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: isTamil ? 0.63 : 0.85,
           ),
-          itemCount: menuItems.length,
           itemBuilder: (context, index) {
             final item = menuItems[index];
-
             return _buildMenuItem(
               icon: item['icon'],
               label: item['label'],
               colorScheme: cs,
               isTamil: isTamil,
-              onTap: () => _handleMenuAction(context, item['action'], t),
+              onTap: () => _handleMenuAction(context, item['action']),
             );
           },
         ),
@@ -101,11 +71,13 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
-  void _handleMenuAction(
-      BuildContext context, String action, AppLocalizations t) {
+  /* ================= MENU ACTION HANDLER ================= */
+
+  void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
       case 'profile':
-        Navigator.of(context).push(
+        Navigator.push(
+          context,
           MaterialPageRoute(
             builder: (_) => ProfileScreen(onLogout: onLogout),
           ),
@@ -121,22 +93,16 @@ class MenuScreen extends StatelessWidget {
               openNotificationTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
       case 'leave':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LeaveScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaveScreen()));
         break;
 
       case 'exams':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ExamScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExamScreen()));
         break;
 
       case 'fees':
@@ -148,7 +114,7 @@ class MenuScreen extends StatelessWidget {
               openFeesTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
@@ -161,11 +127,9 @@ class MenuScreen extends StatelessWidget {
               openHomeworkTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
-
-      
 
       case 'attendance':
         navigatorKey.currentState?.pushAndRemoveUntil(
@@ -176,66 +140,57 @@ class MenuScreen extends StatelessWidget {
               openAttendanceTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
-      // --------------------- NEW PAGES ---------------------
-
       case 'survey':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SurveyScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyScreen()));
         break;
 
       case 'gallery':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const GalleryScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const GalleryScreen()));
         break;
 
       case 'rewards':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const RewardsScreen()),
-        );
-        break;
-
-      case 'timetable':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => const PlaceholderScreen(title: "Time Table")),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen()));
         break;
 
       case 'events':
         Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => const PlaceholderScreen(title: "Events")),
+          MaterialPageRoute(builder: (_) => const PlaceholderScreen(title: 'Events')),
         );
         break;
 
       case 'contacts':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ContactsScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactsScreen()));
         break;
 
-      case 'sms_communications':
+      case 'sms':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SmsCommunicationsScreen()),
         );
         break;
 
-      // ------------------------------------------------------
+      case 'upload_documents':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const UploadDocumentScreen()),
+        );
+        break;
+
+      case 'download_documents':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DownloadDocumentScreen()),
+        );
+        break;
     }
   }
+
+  /* ================= MENU TILE ================= */
 
   Widget _buildMenuItem({
     required IconData icon,
@@ -246,9 +201,7 @@ class MenuScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -259,21 +212,15 @@ class MenuScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 36, color: colorScheme.primary),
               const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: AutoSizeText(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  minFontSize: isTamil ? 9 : 11,
-                  maxFontSize: isTamil ? 12 : 14,
-                  wrapWords: false,
-                  stepGranularity: 1,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                    height: 1.15,
-                  ),
+              AutoSizeText(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                minFontSize: isTamil ? 9 : 11,
+                maxFontSize: isTamil ? 12 : 14,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],

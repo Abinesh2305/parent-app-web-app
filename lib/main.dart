@@ -19,12 +19,10 @@ import 'screens/attendance_screen.dart';
 import 'screens/homework_screen.dart';
 import 'screens/fees_screen.dart';
 import 'screens/leave_screen.dart';
-import 'services/force_update_service.dart';
 import 'dart:convert';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:school_dashboard/services/fcm_helper.dart';
 import 'package:school_dashboard/services/home_service.dart';
-import 'screens/splash_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 // Global navigator key for navigation even when app is not in foreground
@@ -479,8 +477,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final groups = u['groups'] ?? [];
       for (var g in groups) {
         final gid = g['id'];
-        if (gid != null)
+        if (gid != null) {
           await FirebaseMessaging.instance.unsubscribeFromTopic("Group_$gid");
+        }
       }
     }
 

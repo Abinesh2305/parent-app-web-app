@@ -1,6 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/services/attendance_service.dart';
@@ -31,6 +31,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   final AttendanceService _attendanceService = AttendanceService();
   late Box settingsBox;
 
+  // -------------------------------------------------------------
+  // 🔥 UNIVERSAL INTERNET CHECK ADDED HERE
+  // -------------------------------------------------------------
+  Future<bool> _checkInternet(BuildContext context) async {
+    try {
+      final result = await InternetAddress.lookup("google.com")
+          .timeout(const Duration(seconds: 3));
+
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("506 Your internet is slow, please try again."),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    return false;
+  }
+  // -------------------------------------------------------------
+
   @override
   void initState() {
     super.initState();
@@ -41,11 +66,21 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       }
 
       settingsBox = Hive.box('settings');
-      await _loadAttendance();
+
+      /// 🔥 CHECK INTERNET BEFORE LOADING DATA
+      if (await _checkInternet(context)) {
+        await _loadAttendance();
+      } else {
+        setState(() => _isLoading = false);
+      }
 
       settingsBox.watch(key: 'user').listen((event) async {
         await Future.delayed(const Duration(milliseconds: 200));
-        if (mounted) _loadAttendance();
+        if (mounted) {
+          if (await _checkInternet(context)) {
+            _loadAttendance();
+          }
+        }
       });
     });
   }
@@ -73,6 +108,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         return;
       }
 
+      // 🔥 CHECK INTERNET BEFORE API CALL
+      if (!await _checkInternet(context)) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final monthYear =
           "${_focusedDay.year}-${_focusedDay.month.toString().padLeft(2, '0')}";
 
@@ -87,7 +128,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           (data['student_present_approved'] as List?)?.cast<dynamic>() ??
               <dynamic>[];
 
-      // FIXED: CORRECT ABSENT KEY
       final absentDates =
           (data['student_absents'] as List?)?.cast<dynamic>() ?? <dynamic>[];
 
@@ -130,19 +170,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       for (final v in presentDates) {
         final d = _parseDateSafe(v.toString());
         if (d == null) continue;
-
-        if (!statusMap.containsKey(d)) {
-          statusMap[d] = 'Present';
-        }
+        statusMap[d] ??= 'Present';
       }
 
       for (final v in absentDates) {
         final d = _parseDateSafe(v.toString());
         if (d == null) continue;
-
-        if (!statusMap.containsKey(d)) {
-          statusMap[d] = 'Absent';
-        }
+        statusMap[d] ??= 'Absent';
       }
 
       final workingDays = data['noof_working_days'] ?? 0;
@@ -224,13 +258,21 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       _focusedDay = focusedDay;
                     });
                   },
-                  onPageChanged: (focusedDay) {
+
+                  // 🔥 CHECK INTERNET WHEN CHANGING MONTH
+                  onPageChanged: (focusedDay) async {
                     setState(() {
                       _focusedDay = focusedDay;
                       _isLoading = true;
                     });
-                    _loadAttendance();
+
+                    if (await _checkInternet(context)) {
+                      _loadAttendance();
+                    } else {
+                      setState(() => _isLoading = false);
+                    }
                   },
+
                   headerStyle: HeaderStyle(
                     titleCentered: true,
                     formatButtonVisible: false,
@@ -355,7 +397,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Selected border
           if (selected)
             Container(
               width: 42,
@@ -365,8 +406,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 border: Border.all(color: cs.primary, width: 2),
               ),
             ),
-
-          // Background circle
           Container(
             width: 36,
             height: 36,
@@ -375,8 +414,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               shape: BoxShape.circle,
             ),
           ),
-
-          // Today dot (layer under text but visible)
           if (today)
             Positioned(
               bottom: 5,
@@ -385,13 +422,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 height: 7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  // Use white in dark mode for contrast
                   color: isDark ? Colors.white : cs.primary,
                 ),
               ),
             ),
-
-          // Date text ABOVE everything
           Positioned(
             top: 8,
             child: Text(
@@ -451,7 +485,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             _summaryItem(
                 t.workingDays, totalDays.toString(), Colors.blue.shade700),
             _summaryItem(t.absent, absentDays.toString(), Colors.red.shade700),
-            // _summaryItem(t.leave, leaveDays.toString(), Colors.orange.shade700),
             _summaryItem(
                 t.present, presentDays.toString(), Colors.green.shade700),
             Flexible(
@@ -501,9 +534,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       return const SizedBox.shrink();
     }
 
-    final dateLabel = DateFormat('dd MMM yyyy').format(_selectedDay!);
-    final isLeave = status == "Leave";
-    final label = isLeave ? t.leave : t.holiday;
+    final label = status == "Leave" ? t.leave : t.holiday;
 
     return Card(
       elevation: 3,
@@ -513,20 +544,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
         child: Column(
           children: [
-            // Date (centered cleaner look)
-            // Text(
-            //   dateLabel,
-            //   style: TextStyle(
-            //     fontSize: 17,
-            //     fontWeight: FontWeight.w700,
-            //     color: cs.primary,
-            //   ),
-            //   textAlign: TextAlign.center,
-            // ),
-
-            // const SizedBox(height: 16),
-
-            // Center Badge
             Container(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
               decoration: BoxDecoration(
@@ -542,11 +559,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
               ),
             ),
-
             if (desc != null && desc.isNotEmpty) ...[
               const SizedBox(height: 22),
-
-              // Align description section to full width left
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -558,9 +572,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(

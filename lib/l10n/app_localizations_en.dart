@@ -457,4 +457,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smsTitle => 'SMS Communications';
+
+  @override
+  String get documents => 'Documents';
+
+  @override
+  String get chooseFile => 'Choose File';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get upload => 'Upload';
+
+  @override
+  String get uploadSuccess => 'Document uploaded successfully';
+
+  @override
+  String get uploadFailed => 'Upload failed';
+
+  @override
+  String get documentType => 'Document Type';
+
+  @override
+  String get otherDocument => 'Other Document Name';
+
+  @override
+  String get downloaddocuments => 'downloaddocuments';
 }

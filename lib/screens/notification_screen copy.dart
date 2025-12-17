@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'video_full_screen.dart';
 import '../widgets/audio_player_widget.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -33,7 +32,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Map<int, String> _categoryColors = {};
 
-  Set<int> _markedReadOnce = {};
+  final Set<int> _markedReadOnce = {};
 
   DateTime? _selectedFromDate;
   DateTime? _selectedToDate;
@@ -45,7 +44,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   bool _isSpeaking = false;
 
   String _activeWord = "";
-  ScrollController _readScroll = ScrollController();
+  final ScrollController _readScroll = ScrollController();
 
   @override
   void initState() {
@@ -343,7 +342,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     Text(
                       t.filterNotification,
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
 
                     const SizedBox(height: 16),
@@ -426,7 +425,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 value: cat,
                                 child: Text(cat['name'] ?? 'Unnamed'),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -602,9 +601,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         onChanged: _filterSearch,
                         decoration: InputDecoration(
                           hintText: t.searchNotifications,
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: const Icon(Icons.search),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
+                          contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 14),
                         ),
                         style: TextStyle(color: colorScheme.onSurface),
@@ -651,7 +650,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 final category =
                                     n['post_category'] ?? 'General';
                                 final categoryId = n['category_id'] ?? 0;
-                                final textColorHex =
+                                const textColorHex =
                                     // _categoryColors[categoryId] ?? "#007BFF";
                                     "#007BFF";
 
@@ -863,7 +862,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           MainAxisSize.min,
                                                       children: [
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.volume_up),
                                                           onPressed: () =>
                                                               _readAloud(
@@ -872,14 +871,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         ),
                                                         IconButton(
                                                           icon:
-                                                              Icon(Icons.pause),
+                                                              const Icon(Icons.pause),
                                                           onPressed: _isSpeaking
                                                               ? _pauseReading
                                                               : null,
                                                           tooltip: "Pause",
                                                         ),
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.play_arrow),
                                                           onPressed: _isPaused
                                                               ? _resumeReading
@@ -888,7 +887,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         ),
                                                         IconButton(
                                                           icon:
-                                                              Icon(Icons.stop),
+                                                              const Icon(Icons.stop),
                                                           onPressed:
                                                               _isSpeaking ||
                                                                       _isPaused
@@ -897,7 +896,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           tooltip: "Stop",
                                                         ),
                                                         IconButton(
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                               Icons.refresh),
                                                           onPressed:
                                                               _currentReadText
@@ -1293,46 +1292,43 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _downloadFile(BuildContext context, String url) async {
-    try {
-      Directory? dir;
+  try {
+    Directory? dir;
 
-      if (Platform.isAndroid) {
-        // Android private folder (no permission required)
-        dir = await getExternalStorageDirectory();
-      } else {
-        // iOS
-        dir = await getApplicationDocumentsDirectory();
-      }
-
-      if (dir == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cannot access storage")),
-        );
-        return;
-      }
-
-      final fileName = url.split('/').last;
-      final filePath = "${dir.path}/$fileName";
-
-      final dio = Dio();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Downloading $fileName...")),
-      );
-
-      await dio.download(url, filePath);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Saved in: ${dir.path}")),
-      );
-
-      await OpenFilex.open(filePath);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download failed: $e")),
-      );
+    if (Platform.isAndroid) {
+      dir = await getExternalStorageDirectory();
+    } else {
+      dir = await getApplicationDocumentsDirectory();
     }
-  }
 
+    // ✅ NULL CHECK (REQUIRED)
+    if (dir == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Storage not available")),
+      );
+      return;
+    }
+
+    final fileName = url.split('/').last;
+    final filePath = "${dir.path}/$fileName";
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Downloading $fileName...")),
+    );
+
+    await Dio().download(url, filePath);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Saved in: ${dir.path}")),
+    );
+
+    await OpenFilex.open(filePath);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Download failed")),
+    );
+  }
+}
   Color _hexToColor(String hex) {
     final buffer = StringBuffer();
     if (hex.length == 6 || hex.length == 7) buffer.write('ff');

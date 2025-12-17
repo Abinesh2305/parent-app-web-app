@@ -9,18 +9,22 @@ plugins {
 
 android {
     namespace = "com.clasteq.clasteqdemo"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // REQUIRED FIXES
+    compileSdk = 36
+    ndkVersion = "27.0.12077973"
 
     defaultConfig {
         applicationId = "com.clasteq.clasteqdemo"
-        minSdk = flutter.minSdkVersion
+
+        // REQUIRED FIX
+        minSdk = 23
+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
 
-        // App Name for Android manifest
         manifestPlaceholders["appName"] = "CPL Demo School"
     }
 
@@ -40,7 +44,7 @@ android {
             isShrinkResources = false
         }
         getByName("debug") {
-            // debug uses no signingConfig override
+            // debug uses default signing config
         }
     }
 

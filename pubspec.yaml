@@ -37,7 +37,6 @@ dependencies:
   record: ^6.1.2
   audioplayers: ^6.5.1
   flutter_tts: ^4.2.3
-  image_picker: ^1.2.0
   visibility_detector: ^0.4.0+2
   in_app_update: ^4.2.5
   flutter_launcher_icons: ^0.14.4
@@ -45,7 +44,10 @@ dependencies:
   flutter_html: ^3.0.0
   flutter_inappwebview: ^6.1.5
   package_info_plus: ^9.0.0
-
+  file_picker: ^8.0.0
+  image_picker: ^1.1.2
+  image_cropper: ^8.0.2 
+  flutter_image_compress: ^2.3.0
 
   # For translation (English ↔ Tamil)
   flutter_localizations:

@@ -4,11 +4,6 @@ import 'package:school_dashboard/services/notification_service.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:url_launcher/url_launcher.dart';
 import 'youtube_player_screen.dart';
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'video_full_screen.dart';
 import '../widgets/audio_player_widget.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -39,7 +34,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Map<int, String> _categoryColors = {};
 
-  Set<int> _markedReadOnce = {};
+  final Set<int> _markedReadOnce = {};
 
   DateTime? _selectedFromDate;
   DateTime? _selectedToDate;
@@ -98,8 +93,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
       // Clear local cache after successful sync
       await readBox.clear();
-    } catch (e) {
-      debugPrint('Failed to sync pending reads: $e');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text("501 Your internet is slow or unavailable. Please try again."),
+          ),
+        );
+      }
     }
   }
 
@@ -183,13 +185,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     final readBox = Hive.box('pending_reads');
 
-    void _saveReadLocally(int postId) {
+    void saveReadLocally(int postId) {
       readBox.put(postId.toString(), DateTime.now().toString());
     }
 
     _markedReadOnce.add(postId);
 
-    _saveReadLocally(postId);
+    saveReadLocally(postId);
 
     setState(() {
       for (var n in _notifications) {
@@ -243,11 +245,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _filteredNotifications = data;
         _loading = false;
       });
-    } catch (e) {
-      setState(() => _loading = false);
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading notifications: $e")),
+          const SnackBar(
+            content:
+                Text("502.Your internet is slow or unavailable. Please try again."),
+          ),
         );
       }
     }
@@ -286,11 +290,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _filteredNotifications = data;
         _loading = false;
       });
-    } catch (e) {
-      setState(() => _loading = false);
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error fetching notifications: $e")),
+          const SnackBar(
+            content:
+                Text("503 Your internet is slow or unavailable. Please try again."),
+          ),
         );
       }
     }
@@ -494,7 +500,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 value: cat,
                                 child: Text(cat['name'] ?? 'Unnamed'),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -1160,7 +1166,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                                           color:
                                                                               Colors.grey[300],
                                                                           child:
-                                                                              Center(child: Text("No Image")),
+                                                                              const Center(child: Text("No Image")),
                                                                         );
                                                                       },
                                                                     ),

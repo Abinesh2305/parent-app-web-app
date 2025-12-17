@@ -36,7 +36,7 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
   bool _isPaused = false;
   bool _isSpeaking = false;
   String _activeWord = "";
-  ScrollController _readScroll = ScrollController();
+  final ScrollController _readScroll = ScrollController();
 
   // ADD THIS FUNCTION HERE
   void debugTamilVoices() async {
@@ -603,9 +603,9 @@ class _SmsCommunicationsScreenState extends State<SmsCommunicationsScreen> {
 
     // Title (used in old UI)
     String title = '';
-    if (smsType == 'sms')
+    if (smsType == 'sms') {
       title = 'SMS Communication';
-    else if (smsType == 'attendance')
+    } else if (smsType == 'attendance')
       title = 'Attendance Notification';
     else if (smsType == 'birthday') title = 'Birthday Wish';
 

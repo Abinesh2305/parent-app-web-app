@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/fees_service.dart';
@@ -23,16 +24,59 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
     super.initState();
     settingsBox = Hive.box('settings');
     _tabController = TabController(length: 2, vsync: this);
-    _loadFees();
+
+    _init();
+  }
+
+  Future<void> _init() async {
+    /// 🔥 internet check added here
+    if (await _checkInternet(context)) {
+      _loadFees();
+    } else {
+      setState(() => _loading = false);
+    }
 
     settingsBox.watch(key: 'user').listen((event) async {
       await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted) _loadFees();
+      if (mounted && await _checkInternet(context)) {
+        _loadFees();
+      }
     });
   }
 
+  // -------------------------------------------------------------
+  // 🔥 UNIVERSAL INTERNET CHECK
+  // -------------------------------------------------------------
+  Future<bool> _checkInternet(BuildContext context) async {
+    try {
+      final result = await InternetAddress.lookup("google.com")
+          .timeout(const Duration(seconds: 3));
+
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("404 Your internet is slow, please try again."),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    return false;
+  }
+  // -------------------------------------------------------------
+
   Future<void> _loadFees() async {
     setState(() => _loading = true);
+
+    /// 🔥 check internet before calling API
+    if (!await _checkInternet(context)) {
+      setState(() => _loading = false);
+      return;
+    }
 
     try {
       final box = Hive.box('settings');
@@ -55,6 +99,11 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       print("Fees fetch error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("505.Your internet is slow, please try again.")),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -122,20 +171,13 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
+        Text(title,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 8),
         ...list.map((item) {
           final feeItem = item['fee_item'] ?? {};
           final itemName = feeItem['item_name'] ?? 'Unnamed Item';
-          final categoryName =
-              feeItem['is_category_name'] ?? 'Unknown Category';
+          final categoryName = feeItem['is_category_name'] ?? 'Unknown Category';
 
           final totalAmount = item['amount'] ?? 0;
           final paidAmount = item['total_paid'] ?? 0;
@@ -152,49 +194,26 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    itemName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    "Category: $categoryName",
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
+                  Text(itemName,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text("Category: $categoryName",
+                      style: TextStyle(color: Colors.grey[600])),
                   const SizedBox(height: 8),
-
-                  // Fee Amount
-                  _row(
-                      AppLocalizations.of(context)!.feeAmount, "₹$totalAmount"),
-
-                  // Paid Amount
-                  _row(
-                      AppLocalizations.of(context)!.paidAmount, "₹$paidAmount"),
-
-                  // Concession
+                  _row(AppLocalizations.of(context)!.feeAmount, "₹$totalAmount"),
+                  _row(AppLocalizations.of(context)!.paidAmount, "₹$paidAmount"),
                   _row(AppLocalizations.of(context)!.concessionAmount,
                       "₹$concessionAmount"),
-
-                  // Waiver
                   _row(AppLocalizations.of(context)!.waiverAmount,
                       "₹$waiverAmount"),
-
-                  // Balance
                   _row(AppLocalizations.of(context)!.balanceAmount,
                       "₹$balanceAmount"),
-
-                  // Overdue
-                  _row(
-                      AppLocalizations.of(context)!.overdueIn, "$dueDays days"),
-
+                  _row(AppLocalizations.of(context)!.overdueIn, "$dueDays days"),
                   const Divider(height: 18),
-
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      AppLocalizations.of(context)!.dueDate + ": $dueDate",
+                      "${AppLocalizations.of(context)!.dueDate}: $dueDate",
                       style: TextStyle(color: Colors.grey[700], fontSize: 13),
                     ),
                   ),
@@ -212,7 +231,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label + ":"),
+        Text("$label:"),
         Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
       ],
     );
@@ -232,10 +251,9 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              AppLocalizations.of(context)!.overallSummary,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text(AppLocalizations.of(context)!.overallSummary,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _row("Total Fees", "₹$totalAmount"),
             _row("Paid Amount", "₹$paidAmount"),

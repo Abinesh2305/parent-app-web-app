@@ -177,5 +177,18 @@
   "ok": "Ok",
 
   "sms": "SMS",
-  "smsTitle": "SMS Communications"
+  "smsTitle": "SMS Communications",
+
+  "documents": "Documents",
+"chooseFile": "Choose File",
+"camera": "Camera",
+"gallery": "Gallery",
+"upload": "Upload",
+"uploadSuccess": "Document uploaded successfully",
+"uploadFailed": "Upload failed",
+"documentType": "Document Type",
+"otherDocument": "Other Document Name",
+"downloaddocuments": "downloaddocuments"
+
+  
 }

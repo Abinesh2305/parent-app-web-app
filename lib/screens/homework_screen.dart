@@ -5,10 +5,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:open_filex/open_filex.dart';
+
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/services/homework_service.dart';
-import 'package:open_filex/open_filex.dart';
 import '../widgets/image_preview.dart';
 
 class HomeworkScreen extends StatefulWidget {
@@ -20,6 +20,7 @@ class HomeworkScreen extends StatefulWidget {
 
 class _HomeworkScreenState extends State<HomeworkScreen> {
   final HomeworkService _service = HomeworkService();
+
   DateTime _selectedDate = DateTime.now();
   bool _loading = false;
   List<dynamic> _homeworks = [];
@@ -68,10 +69,13 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
 
   Future<void> _loadHomeworks() async {
     if (!mounted) return;
+
     setState(() => _loading = true);
     try {
       final data = await _service.getHomeworks(date: _selectedDate);
       if (!mounted) return;
+
+      setState(() => _homeworks = data);
 
       // Normalize read_status casing and immediately save locally for UNREAD items
       for (final hw in data) {
@@ -96,8 +100,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
         );
       }
     } finally {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -138,7 +141,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   }
 
   Future<void> _openDatePicker() async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
@@ -160,7 +163,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     _loadHomeworks();
   }
 
-  // Identify images
   bool _isImage(String url) {
     final u = url.toLowerCase();
     return u.endsWith('.jpg') ||
@@ -170,7 +172,6 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
         u.endsWith('.webp');
   }
 
-  // Collect all unique attachments
   List<String> _collectAllAttachments() {
     final seen = <String>{};
     final result = <String>[];
@@ -186,6 +187,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
     return result;
   }
 
+  /// ✅ FIXED DOWNLOAD METHOD (NULL SAFE)
   Future<void> _downloadFile(BuildContext context, String url) async {
     try {
       Directory? dir;
@@ -198,7 +200,7 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
 
       if (dir == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cannot access storage")),
+          const SnackBar(content: Text("Storage not available")),
         );
         return;
       }
@@ -206,33 +208,40 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
       final fileName = url.split('/').last;
       final filePath = "${dir.path}/$fileName";
 
-      final dio = Dio();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Downloading $fileName")),
       );
 
-      await dio.download(url, filePath);
+      await Dio().download(url, filePath);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Saved in: ${dir.path}")),
       );
 
       await OpenFilex.open(filePath);
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download failed: $e")),
+        const SnackBar(
+          content: Text(
+            "504 Your internet connection is slow, please try again",
+          ),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final formattedDate = DateFormat('dd MMM, yyyy').format(_selectedDate);
-    final allAttachments = _collectAllAttachments();
     final t = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final bool anyRequiresAck = _homeworks.any((h) => h["ack_required"] == 1);
+    final formattedDate =
+        DateFormat('dd MMM, yyyy').format(_selectedDate);
+
+    final allAttachments = _collectAllAttachments();
+
+    final bool anyRequiresAck =
+        _homeworks.any((h) => h["ack_required"] == 1);
 
     final bool allAckDone = _homeworks.isNotEmpty &&
         _homeworks
@@ -254,15 +263,13 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                     icon: const Icon(Icons.chevron_left),
                     onPressed: () => _changeDate(false),
                   ),
-                  Icon(Icons.calendar_today, color: colorScheme.primary),
+                  Icon(Icons.calendar_today,
+                      color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     formattedDate,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right),
@@ -276,27 +283,19 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _homeworks.isEmpty
-                      ? Center(
-                          child: Text(
-                            t.noHomework,
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 16,
-                            ),
-                          ),
-                        )
+                      ? Center(child: Text(t.noHomework))
                       : SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Card(
+                                elevation: 3,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: 3,
                                 child: Table(
                                   border: TableBorder.all(
-                                      color: Colors.grey.shade400),
+                                      color: Colors.grey.shade300),
                                   columnWidths: const {
                                     0: FlexColumnWidth(1),
                                     1: FlexColumnWidth(2),
@@ -309,160 +308,131 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                                       ),
                                       children: [
                                         Padding(
-                                          padding: const EdgeInsets.all(8.0),
+                                          padding:
+                                              const EdgeInsets.all(8),
                                           child: Text(
                                             t.subject,
                                             style: const TextStyle(
-                                                fontWeight: FontWeight.bold),
+                                                fontWeight:
+                                                    FontWeight.bold),
                                           ),
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.all(8.0),
+                                          padding:
+                                              const EdgeInsets.all(8),
                                           child: Text(
                                             t.description,
                                             style: const TextStyle(
-                                                fontWeight: FontWeight.bold),
+                                                fontWeight:
+                                                    FontWeight.bold),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    ..._homeworks.map((hw) {
-                                      return TableRow(
+                                    ..._homeworks.map(
+                                      (hw) => TableRow(
                                         children: [
                                           Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Text(hw['subject'] ?? ''),
+                                            padding:
+                                                const EdgeInsets.all(8),
+                                            child:
+                                                Text(hw['subject'] ?? ''),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child:
-                                                Text(hw['description'] ?? ''),
+                                            padding:
+                                                const EdgeInsets.all(8),
+                                            child: Text(
+                                                hw['description'] ?? ''),
                                           ),
                                         ],
-                                      );
-                                    }),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                               const SizedBox(height: 16),
+
                               if (anyRequiresAck)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16),
-                                  child: allAckDone
-                                      ? Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 10, horizontal: 14),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.green.withOpacity(0.15),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            "Acknowledged",
-                                            style: TextStyle(
-                                              color: Colors.green,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                allAckDone
+                                    ? const Text(
+                                        "Acknowledged",
+                                        style: TextStyle(
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.bold),
+                                      )
+                                    : ElevatedButton(
+                                        onPressed: () async {
+                                          for (final hw in _homeworks) {
+                                            if (hw["ack_required"] == 1) {
+                                              await _service.acknowledge(
+                                                  hw["main_ref_no"]);
+                                            }
+                                          }
+                                          _loadHomeworks();
+                                        },
+                                        child:
+                                            const Text("Acknowledge"),
+                                      ),
+
+                              if (allAttachments.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                Text(
+                                  t.attachments,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: allAttachments.map((file) {
+                                    final isImage = _isImage(file);
+                                    final fileName =
+                                        file.split('/').last;
+
+                                    return InkWell(
+                                      onTap: () {
+                                        if (isImage) {
+                                          ImagePreview.show(
+                                              context, file);
+                                        } else {
+                                          _downloadFile(context, file);
+                                        }
+                                      },
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          isImage
+                                              ? Image.network(
+                                                  file,
+                                                  width: 80,
+                                                  height: 80,
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : const Icon(
+                                                  Icons.insert_drive_file,
+                                                  size: 48,
+                                                ),
+                                          const SizedBox(height: 4),
+                                          SizedBox(
+                                            width: 80,
+                                            child: Text(
+                                              fileName,
+                                              overflow:
+                                                  TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.blue,
+                                              ),
                                             ),
                                           ),
-                                        )
-                                      : ElevatedButton(
-                                          onPressed: () async {
-                                            for (final hw in _homeworks) {
-                                              if (hw["ack_required"] == 1) {
-                                                await _service.acknowledge(
-                                                    hw["main_ref_no"]);
-                                              }
-                                            }
-                                            _loadHomeworks();
-                                          },
-                                          child: Text("Acknowledge"),
-                                        ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
-                              if (allAttachments.isNotEmpty)
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      t.attachments,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: allAttachments.map((file) {
-                                        final isImage = _isImage(file);
-                                        final isPdf =
-                                            file.toLowerCase().endsWith('.pdf');
-                                        final fileName = file.split('/').last;
-
-                                        return InkWell(
-                                          onTap: () {
-                                            if (isImage) {
-                                              ImagePreview.show(context, file);
-                                            } else {
-                                              _downloadFile(context, file);
-                                            }
-                                          },
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              isPdf
-                                                  ? Container(
-                                                      width: 80,
-                                                      height: 80,
-                                                      color:
-                                                          Colors.grey.shade200,
-                                                      child: const Icon(
-                                                        Icons.picture_as_pdf,
-                                                        size: 40,
-                                                        color: Colors.red,
-                                                      ),
-                                                    )
-                                                  : ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      child: Image.network(
-                                                        file,
-                                                        width: 80,
-                                                        height: 80,
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder: (context,
-                                                                error,
-                                                                stackTrace) =>
-                                                            Container(
-                                                          width: 80,
-                                                          height: 80,
-                                                          color: Colors
-                                                              .grey.shade300,
-                                                          child: const Icon(Icons
-                                                              .broken_image),
-                                                        ),
-                                                      ),
-                                                    ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                fileName,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.blue,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                ),
+                              ],
                             ],
                           ),
                         ),
