@@ -60,7 +60,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Your internet is slow, please try again."),
+          content: Text("404 Your internet is slow, please try again."),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -101,7 +101,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
       print("Fees fetch error: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Your internet is slow, please try again.")),
+          const SnackBar(content: Text("505.Your internet is slow, please try again.")),
         );
       }
     } finally {

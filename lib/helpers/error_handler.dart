@@ -7,22 +7,22 @@ class ErrorHandler {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.receiveTimeout:
         case DioExceptionType.sendTimeout:
-          return "Your internet connection is slow. Please try again.";
+          return "505 Your internet connection is slow. Please try again.";
 
         case DioExceptionType.badResponse:
-          return "Your internet is slow. Please try again later.";
+          return " 507 Your internet is slow. Please try again later.";
 
         case DioExceptionType.connectionError:
-          return "Your internet is slow. Please check your connection.";
+          return "509 Your internet is slow. Please check your connection.";
 
         case DioExceptionType.cancel:
-          return "Your internet is slow. Please try again.";
+          return "500 Your internet is slow. Please try again.";
 
         default:
-          return "Your internet is slow. Please try again.";
+          return "508 Your internet is slow. Please try again.";
       }
     }
 
-    return "Your internet is slow. Please try again.";
+    return "507 Your internet is slow. Please try again.";
   }
 }

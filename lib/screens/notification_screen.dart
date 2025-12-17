@@ -98,7 +98,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content:
-                Text("Your internet is slow or unavailable. Please try again."),
+                Text("501 Your internet is slow or unavailable. Please try again."),
           ),
         );
       }
@@ -250,7 +250,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content:
-                Text("Your internet is slow or unavailable. Please try again."),
+                Text("502.Your internet is slow or unavailable. Please try again."),
           ),
         );
       }
@@ -295,7 +295,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content:
-                Text("Your internet is slow or unavailable. Please try again."),
+                Text("503 Your internet is slow or unavailable. Please try again."),
           ),
         );
       }

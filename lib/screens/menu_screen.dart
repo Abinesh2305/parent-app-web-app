@@ -1,44 +1,24 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
-import 'package:school_dashboard/screens/sms/sms_communications_screen.dart';
+
 import '../main.dart';
+import '../screens/profile_screen.dart';
 import '../screens/exam_screen.dart';
 import '../screens/leave_screen.dart';
-import '../screens/profile_screen.dart';
-import 'package:auto_size_text/auto_size_text.dart';
-import '../screens/placeholder_screen.dart';
 import '../screens/survey_screen.dart';
 import '../screens/gallery_screen.dart';
 import '../screens/rewards_screen.dart';
 import '../screens/contacts_screen.dart';
+import '../screens/placeholder_screen.dart';
+import '../screens/sms/sms_communications_screen.dart';
+import 'upload_document_screen.dart';
+import '../screens/download_document_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   final VoidCallback onLogout;
 
   const MenuScreen({super.key, required this.onLogout});
-
-  // -------------------------------------------------------------
-  // 🔥 UNIVERSAL INTERNET CHECK (Added)
-  // -------------------------------------------------------------
-  Future<bool> _checkInternet(BuildContext context) async {
-    try {
-      final result = await InternetAddress.lookup("google.com")
-          .timeout(const Duration(seconds: 3));
-
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        return true;
-      }
-    } catch (_) {}
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Your internet is slow, please try again."),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    return false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,13 +33,15 @@ class MenuScreen extends StatelessWidget {
       {'icon': Icons.fact_check_outlined, 'label': t.exams, 'action': 'exams'},
       {'icon': Icons.currency_rupee, 'label': t.fees, 'action': 'fees'},
       {'icon': Icons.book_outlined, 'label': t.homework, 'action': 'homework'},
-      {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms_communications'},
+      {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms'},
       {'icon': Icons.calendar_month, 'label': t.attendance, 'action': 'attendance'},
       {'icon': Icons.poll_outlined, 'label': t.survey, 'action': 'survey'},
       {'icon': Icons.photo_library_outlined, 'label': t.gallery, 'action': 'gallery'},
       {'icon': Icons.workspace_premium_outlined, 'label': t.rewarsRemarkmenu, 'action': 'rewards'},
       {'icon': Icons.event_note_outlined, 'label': t.events, 'action': 'events'},
       {'icon': Icons.contact_phone_outlined, 'label': t.schoolContacts, 'action': 'contacts'},
+      {'icon': Icons.upload_file, 'label': t.documents, 'action': 'upload_documents'},
+      //{'icon': Icons.download, 'label': t.downloaddocuments, 'action': 'download_documents'},
     ];
 
     return Scaffold(
@@ -67,13 +49,13 @@ class MenuScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.builder(
+          itemCount: menuItems.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: isTamil ? 0.63 : 0.85,
           ),
-          itemCount: menuItems.length,
           itemBuilder: (context, index) {
             final item = menuItems[index];
             return _buildMenuItem(
@@ -81,14 +63,7 @@ class MenuScreen extends StatelessWidget {
               label: item['label'],
               colorScheme: cs,
               isTamil: isTamil,
-              onTap: () async {
-                // --------------------------------------------------------
-                // 🔥 CHECK INTERNET BEFORE OPENING ANY SCREEN
-                // --------------------------------------------------------
-                if (!await _checkInternet(context)) return;
-
-                _handleMenuAction(context, item['action'], t);
-              },
+              onTap: () => _handleMenuAction(context, item['action']),
             );
           },
         ),
@@ -96,13 +71,17 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
-  // Navigation logic
-  void _handleMenuAction(BuildContext context, String action, AppLocalizations t) {
+  /* ================= MENU ACTION HANDLER ================= */
+
+  void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
       case 'profile':
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => ProfileScreen(onLogout: onLogout),
-        ));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(onLogout: onLogout),
+          ),
+        );
         break;
 
       case 'notifications':
@@ -114,7 +93,7 @@ class MenuScreen extends StatelessWidget {
               openNotificationTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
@@ -135,7 +114,7 @@ class MenuScreen extends StatelessWidget {
               openFeesTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
@@ -148,7 +127,7 @@ class MenuScreen extends StatelessWidget {
               openHomeworkTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
@@ -161,7 +140,7 @@ class MenuScreen extends StatelessWidget {
               openAttendanceTab: true,
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
         break;
 
@@ -178,18 +157,40 @@ class MenuScreen extends StatelessWidget {
         break;
 
       case 'events':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaceholderScreen(title: "Events")));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PlaceholderScreen(title: 'Events')),
+        );
         break;
 
       case 'contacts':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactsScreen()));
         break;
 
-      case 'sms_communications':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SmsCommunicationsScreen()));
+      case 'sms':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SmsCommunicationsScreen()),
+        );
+        break;
+
+      case 'upload_documents':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const UploadDocumentScreen()),
+        );
+        break;
+
+      case 'download_documents':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DownloadDocumentScreen()),
+        );
         break;
     }
   }
+
+  /* ================= MENU TILE ================= */
 
   Widget _buildMenuItem({
     required IconData icon,

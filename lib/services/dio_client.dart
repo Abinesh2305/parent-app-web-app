@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../screens/login_screen.dart';
-import '../main.dart'; // import this to access navigatorKey
+import '../main.dart';
 
 class DioClient {
   static final Dio dio = Dio(
@@ -15,28 +15,42 @@ class DioClient {
         'Accept': 'application/json',
       },
     ),
-  )..interceptors.add(InterceptorsWrapper(
-      onResponse: (response, handler) {
-        final msg = response.data?['message']?.toString() ?? '';
+  )..interceptors.add(
+      InterceptorsWrapper(
+        // ✅ ADD TOKEN HERE
+        onRequest: (options, handler) {
+          final box = Hive.box('settings');
+          final token = box.get('token'); // 🔑 CORRECT KEY
 
-        if (_isInvalidTokenMessage(msg)) {
-          _handleInvalidUser();
-          return;
-        }
-        return handler.next(response);
-      },
-      onError: (DioException e, handler) {
-        final msg = e.response?.data?['message']?.toString() ?? '';
+          if (token != null) {
+            options.headers['x-api-key'] = token;
+          }
 
-        if (_isInvalidTokenMessage(msg)) {
-          _handleInvalidUser();
-          return;
-        }
-        return handler.next(e);
-      },
-    ));
+          return handler.next(options);
+        },
 
-  // Check if message indicates invalid session or device
+        onResponse: (response, handler) {
+          final msg = response.data?['message']?.toString() ?? '';
+
+          if (_isInvalidTokenMessage(msg)) {
+            _handleInvalidUser();
+            return;
+          }
+          return handler.next(response);
+        },
+
+        onError: (DioException e, handler) {
+          final msg = e.response?.data?['message']?.toString() ?? '';
+
+          if (_isInvalidTokenMessage(msg)) {
+            _handleInvalidUser();
+            return;
+          }
+          return handler.next(e);
+        },
+      ),
+    );
+
   static bool _isInvalidTokenMessage(String msg) {
     final lower = msg.toLowerCase();
     return lower.contains('invalid user') ||
@@ -44,7 +58,6 @@ class DioClient {
         lower.contains('device changed');
   }
 
-  // Force logout and redirect to login screen
   static Future<void> _handleInvalidUser() async {
     try {
       final box = Hive.box('settings');
@@ -63,7 +76,7 @@ class DioClient {
         );
       }
     } catch (e) {
-      print("⚠️ Error handling invalid user redirect: $e");
+      debugPrint("⚠️ Logout redirect error: $e");
     }
   }
 }

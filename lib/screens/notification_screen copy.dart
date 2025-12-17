@@ -1292,46 +1292,43 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _downloadFile(BuildContext context, String url) async {
-    try {
-      Directory? dir;
+  try {
+    Directory? dir;
 
-      if (Platform.isAndroid) {
-        // Android private folder (no permission required)
-        dir = await getExternalStorageDirectory();
-      } else {
-        // iOS
-        dir = await getApplicationDocumentsDirectory();
-      }
-
-      if (dir == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cannot access storage")),
-        );
-        return;
-      }
-
-      final fileName = url.split('/').last;
-      final filePath = "${dir.path}/$fileName";
-
-      final dio = Dio();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Downloading $fileName...")),
-      );
-
-      await dio.download(url, filePath);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Saved in: ${dir.path}")),
-      );
-
-      await OpenFilex.open(filePath);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download failed: $e")),
-      );
+    if (Platform.isAndroid) {
+      dir = await getExternalStorageDirectory();
+    } else {
+      dir = await getApplicationDocumentsDirectory();
     }
-  }
 
+    // ✅ NULL CHECK (REQUIRED)
+    if (dir == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Storage not available")),
+      );
+      return;
+    }
+
+    final fileName = url.split('/').last;
+    final filePath = "${dir.path}/$fileName";
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Downloading $fileName...")),
+    );
+
+    await Dio().download(url, filePath);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Saved in: ${dir.path}")),
+    );
+
+    await OpenFilex.open(filePath);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Download failed")),
+    );
+  }
+}
   Color _hexToColor(String hex) {
     final buffer = StringBuffer();
     if (hex.length == 6 || hex.length == 7) buffer.write('ff');

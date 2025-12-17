@@ -457,4 +457,31 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get smsTitle => 'SMS தொடர்புகள்';
+
+  @override
+  String get documents => 'ஆவணங்கள்';
+
+  @override
+  String get chooseFile => 'கோப்பைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get upload => 'பதிவேற்று';
+
+  @override
+  String get uploadSuccess => 'ஆவணம் வெற்றிகரமாக பதிவேற்றப்பட்டது';
+
+  @override
+  String get uploadFailed => 'ஆவணம் பதிவேற்றம் தோல்வியடைந்தது';
+
+  @override
+  String get documentType => 'ஆவண வகை';
+
+  @override
+  String get otherDocument => 'மற்ற ஆவணத்தின் பெயர்';
+
+  @override
+  String get downloaddocuments => 'downloaddocuments';
 }

@@ -47,7 +47,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Your internet is slow, please try again."),
+          content: Text("506 Your internet is slow, please try again."),
           behavior: SnackBarBehavior.floating,
         ),
       );

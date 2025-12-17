@@ -15,9 +15,10 @@ class FileDownloader {
         dir = await getApplicationDocumentsDirectory();
       }
 
+      // ✅ NULL CHECK (IMPORTANT)
       if (dir == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cannot access storage")),
+          const SnackBar(content: Text("Storage not available")),
         );
         return;
       }
