@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/document_service.dart';
+import 'download_document_screen.dart';
 
 class UploadDocumentScreen extends StatefulWidget {
   const UploadDocumentScreen({super.key});
@@ -34,7 +35,12 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     {'label': 'Other', 'value': 'other'},
   ];
 
-  /* ================= IMAGE CROP ================= */
+  /* ================= IMAGE HELPERS ================= */
+
+  bool _isImage(File file) {
+    final p = file.path.toLowerCase();
+    return p.endsWith('.jpg') || p.endsWith('.jpeg') || p.endsWith('.png');
+  }
 
   Future<File?> _cropImage(File file) async {
     final cropped = await ImageCropper().cropImage(
@@ -49,25 +55,21 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
         IOSUiSettings(title: 'Crop Document'),
       ],
     );
-
-    if (cropped == null) return null;
-    return File(cropped.path);
+    return cropped == null ? null : File(cropped.path);
   }
-
-  /* ================= IMAGE COMPRESSION ================= */
 
   Future<File> _compressImage(File file) async {
     final dir = await getTemporaryDirectory();
     int quality = 70;
-    File compressed = file;
+    File out = file;
 
     for (int i = 0; i < 6; i++) {
-      final targetPath =
+      final target =
           '${dir.path}/doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final result = await FlutterImageCompress.compressAndGetFile(
-        compressed.path,
-        targetPath,
+        out.path,
+        target,
         quality: quality,
         minWidth: 1280,
         minHeight: 1280,
@@ -76,15 +78,14 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
 
       if (result == null) break;
 
-      compressed = File(result.path);
-
-      if (compressed.lengthSync() / 1024 <= 500) break;
+      out = File(result.path);
+      if (out.lengthSync() / 1024 <= 500) break;
 
       quality -= 10;
       if (quality < 30) break;
     }
 
-    return compressed;
+    return out;
   }
 
   /* ================= FILE PICK ================= */
@@ -102,7 +103,6 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     if (_isImage(file)) {
       final cropped = await _cropImage(file);
       if (cropped == null) return;
-
       file = await _compressImage(cropped);
     }
 
@@ -126,15 +126,7 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     if (cropped == null) return;
 
     final compressed = await _compressImage(cropped);
-
     setState(() => _file = compressed);
-  }
-
-  bool _isImage(File file) {
-    final path = file.path.toLowerCase();
-    return path.endsWith('.jpg') ||
-        path.endsWith('.jpeg') ||
-        path.endsWith('.png');
   }
 
   /* ================= UPLOAD ================= */
@@ -148,9 +140,10 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     final user = Hive.box('settings').get('user');
     if (user == null) {
       _snack('User data missing. Please login again.');
-      return; 
+      return;
     }
 
+    // ✅ CONFIRMED FROM YOUR JSON
     final int? studentId = user['userdetails']?['id'];
     final int? classId = user['userdetails']?['class_id'];
     final int? sectionId = user['userdetails']?['section_id'];
@@ -175,7 +168,7 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
       _progress = 0;
     });
 
-    final success = await DocumentService.uploadDocument(
+    final result = await DocumentService.uploadDocument(
       studentId: studentId,
       classId: classId,
       sectionId: sectionId,
@@ -192,22 +185,23 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
 
     setState(() => _uploading = false);
 
-    if (success) {
-      _snack('Document uploaded successfully');
+    if (result['success'] == true) {
+      _snack(result['message'] ?? 'Success');
+
+      // reset after success OR already uploaded
       setState(() {
         _file = null;
         _documentType = null;
         _otherDocumentName = null;
       });
     } else {
-      _snack('Upload failed');
+      _snack(result['message'] ?? 'Upload failed');
     }
   }
 
   /* ================= UI ================= */
 
   void _snack(String msg) {
-    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(msg)));
@@ -269,11 +263,29 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
               ],
             ),
 
+            const SizedBox(height: 12),
+
+            /// 👇 VIEW DOCUMENTS BUTTON (CENTER)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.visibility),
+                label: const Text('View Documents'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DownloadDocumentScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+
             if (_file != null) ...[
               const SizedBox(height: 12),
               Text('Selected: ${p.basename(_file!.path)}'),
               const SizedBox(height: 8),
-
               _isImage(_file!)
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),

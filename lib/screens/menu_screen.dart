@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
-
 import '../main.dart';
 import '../screens/profile_screen.dart';
 import '../screens/exam_screen.dart';
@@ -28,19 +27,51 @@ class MenuScreen extends StatelessWidget {
 
     final List<Map<String, dynamic>> menuItems = [
       {'icon': Icons.person_outline, 'label': t.profile, 'action': 'profile'},
-      {'icon': Icons.notifications_none, 'label': t.notifications, 'action': 'notifications'},
-      {'icon': Icons.calendar_today_outlined, 'label': t.leaveManagement, 'action': 'leave'},
+      {
+        'icon': Icons.notifications_none,
+        'label': t.notifications,
+        'action': 'notifications'
+      },
+      {
+        'icon': Icons.calendar_today_outlined,
+        'label': t.applyForLeave,
+        'action': 'leave'
+      },
       {'icon': Icons.fact_check_outlined, 'label': t.exams, 'action': 'exams'},
       {'icon': Icons.currency_rupee, 'label': t.fees, 'action': 'fees'},
       {'icon': Icons.book_outlined, 'label': t.homework, 'action': 'homework'},
       {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms'},
-      {'icon': Icons.calendar_month, 'label': t.attendance, 'action': 'attendance'},
+      {
+        'icon': Icons.calendar_month,
+        'label': t.attendance,
+        'action': 'attendance'
+      },
       {'icon': Icons.poll_outlined, 'label': t.survey, 'action': 'survey'},
-      {'icon': Icons.photo_library_outlined, 'label': t.gallery, 'action': 'gallery'},
-      {'icon': Icons.workspace_premium_outlined, 'label': t.rewarsRemarkmenu, 'action': 'rewards'},
-      {'icon': Icons.event_note_outlined, 'label': t.events, 'action': 'events'},
-      {'icon': Icons.contact_phone_outlined, 'label': t.schoolContacts, 'action': 'contacts'},
-      {'icon': Icons.upload_file, 'label': t.documents, 'action': 'upload_documents'},
+      {
+        'icon': Icons.photo_library_outlined,
+        'label': t.gallery,
+        'action': 'gallery'
+      },
+      {
+        'icon': Icons.workspace_premium_outlined,
+        'label': t.rewarsRemarkmenu,
+        'action': 'rewards'
+      },
+      {
+        'icon': Icons.event_note_outlined,
+        'label': t.events,
+        'action': 'events'
+      },
+      {
+        'icon': Icons.contact_phone_outlined,
+        'label': t.schoolContacts,
+        'action': 'contacts'
+      },
+      {
+        'icon': Icons.upload_file,
+        'label': t.upload,
+        'action': 'upload_documents'
+      },
       //{'icon': Icons.download, 'label': t.downloaddocuments, 'action': 'download_documents'},
     ];
 
@@ -98,11 +129,13 @@ class MenuScreen extends StatelessWidget {
         break;
 
       case 'leave':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaveScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const LeaveScreen()));
         break;
 
       case 'exams':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExamScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const ExamScreen()));
         break;
 
       case 'fees':
@@ -145,26 +178,31 @@ class MenuScreen extends StatelessWidget {
         break;
 
       case 'survey':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const SurveyScreen()));
         break;
 
       case 'gallery':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const GalleryScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const GalleryScreen()));
         break;
 
       case 'rewards':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const RewardsScreen()));
         break;
 
       case 'events':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const PlaceholderScreen(title: 'Events')),
+          MaterialPageRoute(
+              builder: (_) => const PlaceholderScreen(title: 'Events')),
         );
         break;
 
       case 'contacts':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactsScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const ContactsScreen()));
         break;
 
       case 'sms':
@@ -214,13 +252,14 @@ class MenuScreen extends StatelessWidget {
               const SizedBox(height: 8),
               AutoSizeText(
                 label,
-                textAlign: TextAlign.center,
                 maxLines: 2,
-                minFontSize: isTamil ? 9 : 11,
-                maxFontSize: isTamil ? 12 : 14,
+                minFontSize: 10,
+                maxFontSize: 12,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
                 ),
               ),
             ],

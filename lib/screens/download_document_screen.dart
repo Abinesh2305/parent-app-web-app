@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
-import '../services/dio_client.dart';
-import '../l10n/app_localizations.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../services/document_service.dart';
+import 'pdf_viewer_screen.dart';
 
 class DownloadDocumentScreen extends StatefulWidget {
   const DownloadDocumentScreen({super.key});
@@ -15,8 +15,10 @@ class DownloadDocumentScreen extends StatefulWidget {
 }
 
 class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
-  bool _loading = true;
-  List<dynamic> _documents = [];
+  bool loading = true;
+
+  Map<String, dynamic>? documentsStatus;
+  List<dynamic> otherDocuments = [];
 
   @override
   void initState() {
@@ -24,48 +26,47 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
     _loadDocuments();
   }
 
-  /* ================= LOAD DOCUMENTS ================= */
+  /* ================= LOAD DOCUMENT STATUS ================= */
 
   Future<void> _loadDocuments() async {
-    try {
-      final user = Hive.box('settings').get('user');
-      if (user == null) return;
+    setState(() => loading = true);
 
-      final res = await DioClient.dio.get(
-        'documents/upload',
-        queryParameters: {
-          'student_id': user['id'],
-        },
-      );
+    final user = Hive.box('settings').get('user');
+    if (user == null || user['id'] == null) {
+      setState(() => loading = false);
+      return;
+    }
 
+    final res = await DocumentService.getMyDocumentStatus(
+      userId: user['id'], // same as Postman
+    );
+
+    if (res['success'] == true && mounted) {
       setState(() {
-        _documents = res.data['data'] ?? [];
-        _loading = false;
+        documentsStatus =
+            Map<String, dynamic>.from(res['data']['documents_status']);
+        otherDocuments = List.from(res['data']['other_documents'] ?? []);
       });
-    } catch (e) {
-      _loading = false;
-      _showSnack("Failed to load documents");
+    }
+
+    if (mounted) {
+      setState(() => loading = false);
     }
   }
 
-  /* ================= DOWNLOAD FILE ================= */
+  /* ================= HELPERS ================= */
 
-  Future<void> _downloadFile(String url, String fileName) async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final filePath = "${dir.path}/$fileName";
+  Map<String, dynamic>? _doc(String key) => documentsStatus?[key];
 
-      await Dio().download(url, filePath);
+  bool _uploaded(String key) => _doc(key)?['uploaded'] == true;
 
-      await OpenFilex.open(filePath);
-    } catch (e) {
-      _showSnack("Download failed");
-    }
-  }
+  String? _viewUrl(String key) => _doc(key)?['view_url'];
 
-  /* ================= IMAGE PREVIEW ================= */
+  bool _isImageDoc(String key) => _doc(key)?['file_type'] == 'image';
 
-  void _previewImage(String imageUrl) {
+  /* ================= IMAGE VIEWER ================= */
+
+  void _previewImage(String url) {
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -76,10 +77,19 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
             InteractiveViewer(
               child: Center(
                 child: Image.network(
-                  imageUrl,
+                  url,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.broken_image, color: Colors.white),
+                  loadingBuilder: (_, child, progress) {
+                    if (progress == null) return child;
+                    return const CircularProgressIndicator(
+                      color: Colors.white,
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image,
+                    color: Colors.white,
+                    size: 50,
+                  ),
                 ),
               ),
             ),
@@ -97,66 +107,167 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
     );
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+  /* ================= PDF HANDLING ================= */
+
+  Future<File> _downloadPdf(String url) async {
+    final dir = await getTemporaryDirectory();
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final path = '${dir.path}/$fileName';
+
+    final res = await Dio().get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+
+    final file = File(path);
+    await file.writeAsBytes(res.data);
+    return file;
   }
 
-  bool _isImage(String file) {
-    final f = file.toLowerCase();
-    return f.endsWith('.jpg') ||
-        f.endsWith('.jpeg') ||
-        f.endsWith('.png');
+  Future<void> _openPdf(String url, String title) async {
+    try {
+      final file = await _downloadPdf(url);
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerScreen(
+            file: file,
+            title: title,
+          ),
+        ),
+      );
+    } catch (_) {
+      _snack('Unable to open document');
+    }
   }
 
-  /* ================= UI ================= */
+  /* ================= UI HELPERS ================= */
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /* ================= TABLE ROW ================= */
+
+  Widget _docRow(String title, String key) {
+    final uploaded = _uploaded(key);
+    final url = _viewUrl(key);
+    final isImage = _isImageDoc(key);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(title, overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                Icon(
+                  uploaded ? Icons.check_circle : Icons.cancel,
+                  color: uploaded ? Colors.green : Colors.red,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    uploaded ? 'Uploaded' : 'Not Uploaded',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: uploaded && url != null
+                  ? TextButton(
+                      onPressed: () {
+                        if (isImage) {
+                          _previewImage(url);
+                        } else {
+                          _openPdf(url, title);
+                        }
+                      },
+                      child: const Text('View'),
+                    )
+                  : const Text(
+                      'No File',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /* ================= BUILD ================= */
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-
     return Scaffold(
-      appBar: AppBar(title: Text(t.documents)),
-      body: _loading
+      appBar: AppBar(title: const Text('My Documents')),
+      body: loading
           ? const Center(child: CircularProgressIndicator())
-          : _documents.isEmpty
-              ? Center(child: Text("No documents found"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _documents.length,
-                  itemBuilder: (context, index) {
-                    final doc = _documents[index];
-                    final fileUrl = doc['file_url'];
-                    final name = doc['document_name'] ?? 'Document';
-                    final fileName = fileUrl.split('/').last;
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: _isImage(fileName)
-                            ? const Icon(Icons.image, color: Colors.green)
-                            : const Icon(Icons.picture_as_pdf,
-                                color: Colors.red),
-                        title: Text(name),
-                        subtitle: Text(fileName,
-                            overflow: TextOverflow.ellipsis),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.download),
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Document Status',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const Divider(),
+                  _docRow('Aadhaar Certificate', 'aadhar'),
+                  _docRow('Birth Certificate', 'birth'),
+                  _docRow('Income Certificate', 'income'),
+                  _docRow('Community Certificate', 'community'),
+                  if (otherDocuments.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Other Documents',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const Divider(),
+                    for (final doc in otherDocuments)
+                      ListTile(
+                        title: Text(doc['document_name'] ?? 'Document'),
+                        trailing: TextButton(
                           onPressed: () {
-                            if (_isImage(fileName)) {
-                              _previewImage(fileUrl);
+                            final url = doc['view_url'];
+                            if (url == null) return;
+
+                            if (doc['file_type'] == 'image') {
+                              _previewImage(url);
                             } else {
-                              _downloadFile(fileUrl, fileName);
+                              _openPdf(
+                                url,
+                                doc['document_name'] ?? 'Document',
+                              );
                             }
                           },
+                          child: const Text('View'),
                         ),
                       ),
-                    );
-                  },
-                ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }

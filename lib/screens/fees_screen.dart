@@ -29,7 +29,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _init() async {
-    /// 🔥 internet check added here
+    /// internet check added here
     if (await _checkInternet(context)) {
       _loadFees();
     } else {
@@ -45,7 +45,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
   }
 
   // -------------------------------------------------------------
-  // 🔥 UNIVERSAL INTERNET CHECK
+  // UNIVERSAL INTERNET CHECK
   // -------------------------------------------------------------
   Future<bool> _checkInternet(BuildContext context) async {
     try {
@@ -72,7 +72,7 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
   Future<void> _loadFees() async {
     setState(() => _loading = true);
 
-    /// 🔥 check internet before calling API
+    /// check internet before calling API
     if (!await _checkInternet(context)) {
       setState(() => _loading = false);
       return;
