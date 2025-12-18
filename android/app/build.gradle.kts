@@ -18,7 +18,7 @@ android {
         applicationId = "com.clasteq.clasteqdemo"
 
         // REQUIRED FIX
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
 
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
