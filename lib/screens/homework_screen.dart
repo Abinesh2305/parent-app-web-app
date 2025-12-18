@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
@@ -24,16 +25,46 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   bool _loading = false;
   List<dynamic> _homeworks = [];
   late Box settingsBox;
+  Timer? _syncTimer;
 
   @override
   void initState() {
     super.initState();
     settingsBox = Hive.box('settings');
-    _loadHomeworks();
+    _ensurePendingBoxOpen().then((_) {
+      _loadHomeworks();
+      // start hourly sync after ensuring pending box is open
+      _startHourlySync();
+    });
 
     settingsBox.watch(key: 'user').listen((_) {
       if (mounted) _loadHomeworks();
     });
+  }
+
+  Future<void> _ensurePendingBoxOpen() async {
+    if (!Hive.isBoxOpen('pending_reads_homework')) {
+      try {
+        await Hive.openBox('pending_reads_homework');
+      } catch (e) {
+        debugPrint("Failed to open pending_reads_homework box: $e");
+      }
+    }
+  }
+
+  void _startHourlySync() {
+    // Cancel existing timer if any
+    _syncTimer?.cancel();
+    // Sync pending reads every 60 minutes
+    _syncTimer = Timer.periodic(const Duration(minutes: 60), (_) {
+      _syncPendingHomeworkReads();
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadHomeworks() async {
@@ -46,21 +77,66 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
 
       setState(() => _homeworks = data);
 
+      // Normalize read_status casing and immediately save locally for UNREAD items
       for (final hw in data) {
-        if (hw["read_status"] == "UNREAD") {
-          await _service.markAsRead(hw["main_ref_no"]);
+        final readStatus =
+            (hw["read_status"] ?? "UNREAD").toString().toUpperCase();
+        hw["read_status"] = readStatus;
+
+        if (readStatus == "UNREAD") {
+          // Save locally (do not call server now) — mimic notifications behavior
+          _saveReadLocally(
+              hw["main_ref_no"]?.toString() ?? hw["id"]?.toString() ?? "");
+          // Update local UI state to show as READ immediately
+          hw["read_status"] = "READ";
         }
       }
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "403 Your internet connection is slow, please try again",
-          ),
-        ),
-      );
+
+      setState(() => _homeworks = data);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading homeworks: $e")),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _saveReadLocally(String ref) {
+    if (ref.isEmpty) return;
+    try {
+      final box = Hive.box('pending_reads_homework');
+      // Use ISO8601 timestamp for clarity
+      box.put(ref, DateTime.now().toIso8601String());
+      debugPrint("[Homework] Saved pending read locally: $ref");
+    } catch (e) {
+      debugPrint("[Homework] Failed saving pending read locally: $e");
+    }
+  }
+
+  Future<void> _syncPendingHomeworkReads() async {
+    try {
+      final box = Hive.box('pending_reads_homework');
+      if (box.isEmpty) return;
+
+      final pending = Map<String, dynamic>.from(box.toMap());
+      final homeworkIds = pending.keys.toList();
+
+      debugPrint("[Homework] Syncing ${homeworkIds.length} items...");
+
+      final ok = await _service.batchMarkAsRead(homeworkIds);
+
+      if (ok) {
+        await box.clear();
+        await _loadHomeworks();
+        debugPrint("[Homework] Sync success (batch)");
+      } else {
+        debugPrint("[Homework] Sync failed");
+      }
+    } catch (e) {
+      debugPrint("[Homework] Sync error: $e");
     }
   }
 

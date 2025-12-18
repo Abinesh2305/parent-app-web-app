@@ -43,8 +43,12 @@ Future<void> main() async {
   await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
-  await Hive.openBox('settings');
-  await Hive.openBox('pending_reads');
+
+  await Future.wait([
+    Hive.openBox('settings'),
+    Hive.openBox('pending_reads'),
+    Hive.openBox('pending_reads_homework'),
+  ]);
 
   await FirebaseMessaging.instance.requestPermission(
     alert: true,

@@ -142,6 +142,29 @@ class HomeworkService {
     );
   }
 
+  Future<bool> batchMarkAsRead(List<String> homeworkIds) async {
+    final box = Hive.box('settings');
+    final user = box.get('user');
+    final token = box.get('token');
+
+    if (user == null || token == null) return false;
+
+    final body = {
+      "user_id": user['id'],
+      "school_id": user['school_college_id'],
+      "homework_ids": homeworkIds,
+    };
+
+    final response = await _dio.post(
+      "homework-batch-read",
+      data: body,
+      options: Options(headers: {"x-api-key": token}),
+    );
+
+    return response.statusCode == 200 && response.data['status'] == 1;
+  }
+
+
   Future<void> acknowledge(String homeworkRef) async {
     final box = Hive.box('settings');
     final user = box.get('user');
