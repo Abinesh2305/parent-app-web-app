@@ -262,7 +262,7 @@ void _showNetworkMessage() {
             "504 Your internet connection is slow, please try again",
           ),
         ),
-      );
+      ); 
     }
   }
 
