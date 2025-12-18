@@ -68,41 +68,52 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   }
 
   Future<void> _loadHomeworks() async {
+  if (!mounted) return;
+
+  setState(() => _loading = true);
+
+  try {
+    final data = await _service.getHomeworks(date: _selectedDate);
     if (!mounted) return;
 
-    setState(() => _loading = true);
-    try {
-      final data = await _service.getHomeworks(date: _selectedDate);
-      if (!mounted) return;
+    // Normalize read_status casing and immediately save locally for UNREAD items
+    for (final hw in data) {
+      final readStatus =
+          (hw["read_status"] ?? "UNREAD").toString().toUpperCase();
+      hw["read_status"] = readStatus;
 
-      setState(() => _homeworks = data);
-
-      // Normalize read_status casing and immediately save locally for UNREAD items
-      for (final hw in data) {
-        final readStatus =
-            (hw["read_status"] ?? "UNREAD").toString().toUpperCase();
-        hw["read_status"] = readStatus;
-
-        if (readStatus == "UNREAD") {
-          // Save locally (do not call server now) — mimic notifications behavior
-          _saveReadLocally(
-              hw["main_ref_no"]?.toString() ?? hw["id"]?.toString() ?? "");
-          // Update local UI state to show as READ immediately
-          hw["read_status"] = "READ";
-        }
-      }
-
-      setState(() => _homeworks = data);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading homeworks: $e")),
+      if (readStatus == "UNREAD") {
+        // Save locally (do not call server now)
+        _saveReadLocally(
+          hw["main_ref_no"]?.toString() ??
+              hw["id"]?.toString() ??
+              "",
         );
+
+        // Update UI immediately
+        hw["read_status"] = "READ";
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
+
+    setState(() => _homeworks = data);
   }
+
+  on SocketException {
+    _showNetworkMessage();
+  }
+  on TimeoutException {
+    _showNetworkMessage();
+  }
+  catch (e) {
+    // Hide technical error from user
+    debugPrint("[Homework] Load error: $e");
+    _showNetworkMessage();
+  }
+  finally {
+    if (mounted) setState(() => _loading = false);
+  }
+}
+
 
   void _saveReadLocally(String ref) {
     if (ref.isEmpty) return;
@@ -117,28 +128,53 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   }
 
   Future<void> _syncPendingHomeworkReads() async {
-    try {
-      final box = Hive.box('pending_reads_homework');
-      if (box.isEmpty) return;
+  try {
+    final box = Hive.box('pending_reads_homework');
+    if (box.isEmpty) return;
 
-      final pending = Map<String, dynamic>.from(box.toMap());
-      final homeworkIds = pending.keys.toList();
+    final pending = Map<String, dynamic>.from(box.toMap());
+    final homeworkIds = pending.keys.toList();
 
-      debugPrint("[Homework] Syncing ${homeworkIds.length} items...");
+    debugPrint("[Homework] Syncing ${homeworkIds.length} items...");
 
-      final ok = await _service.batchMarkAsRead(homeworkIds);
+    final ok = await _service.batchMarkAsRead(homeworkIds);
 
-      if (ok) {
-        await box.clear();
-        await _loadHomeworks();
-        debugPrint("[Homework] Sync success (batch)");
-      } else {
-        debugPrint("[Homework] Sync failed");
-      }
-    } catch (e) {
-      debugPrint("[Homework] Sync error: $e");
+    if (ok) {
+      await box.clear();
+      await _loadHomeworks();
+      debugPrint("[Homework] Sync success (batch)");
+    } else {
+      _showNetworkMessage();
+      debugPrint("[Homework] Sync failed (API returned false)");
     }
   }
+  // 🌐 Network / timeout / socket issues
+  on SocketException {
+    _showNetworkMessage();
+  }
+  on TimeoutException {
+    _showNetworkMessage();
+  }
+  catch (e) {
+    
+    _showNetworkMessage();
+    debugPrint("[Homework] Sync error (hidden): $e");
+  }
+}
+void _showNetworkMessage() {
+  if (!mounted) return;
+
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Your internet is slow or unavailable. Please try again later.',
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+}
 
   Future<void> _openDatePicker() async {
     final picked = await showDatePicker(

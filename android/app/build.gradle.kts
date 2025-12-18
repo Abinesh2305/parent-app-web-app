@@ -15,18 +15,17 @@ android {
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.clasteq.clasteqdemo"
+    applicationId = "com.clasteq.clasteqdemo"
 
-        // REQUIRED FIX
-        minSdk = flutter.minSdkVersion
+    minSdk = 23
+    targetSdk = flutter.targetSdkVersion
 
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-        multiDexEnabled = true
+    versionCode = flutter.versionCode
+    versionName = flutter.versionName
 
-        manifestPlaceholders["appName"] = "CPL Demo School"
-    }
+    multiDexEnabled = true
+    manifestPlaceholders["appName"] = "CPL Demo School"
+}
 
     signingConfigs {
         create("release") {
