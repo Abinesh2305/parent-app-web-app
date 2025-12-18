@@ -1,7 +1,7 @@
 name: school_dashboard
 description: A professional school parent Flutter application
 publish_to: 'none'
-version: 3.1.21+40
+version: 3.1.22+45
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -45,10 +45,16 @@ dependencies:
   flutter_inappwebview: ^6.1.5
   package_info_plus: ^9.0.0
   file_picker: ^8.0.0
+<<<<<<< HEAD
   image_picker: ^1.1.2
   image_cropper: ^8.0.2 
   flutter_image_compress: ^2.3.0
   flutter_pdfview: ^1.3.2
+=======
+  image_picker: ^1.2.1
+  image_cropper: ^11.0.0
+  flutter_image_compress: ^2.4.0
+>>>>>>> db98665d34161f9bbf74a55b93140c534c9234e0
 
   # For translation (English ↔ Tamil)
   flutter_localizations:
