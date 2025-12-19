@@ -38,20 +38,18 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
     }
 
     final res = await DocumentService.getMyDocumentStatus(
-      userId: user['id'], // same as Postman
+      userId: user['id'],
     );
 
     if (res['success'] == true && mounted) {
       setState(() {
         documentsStatus =
-            Map<String, dynamic>.from(res['data']['documents_status']);
+            Map<String, dynamic>.from(res['data']['documents_status'] ?? {});
         otherDocuments = List.from(res['data']['other_documents'] ?? []);
       });
     }
 
-    if (mounted) {
-      setState(() => loading = false);
-    }
+    if (mounted) setState(() => loading = false);
   }
 
   /* ================= HELPERS ================= */
@@ -60,11 +58,16 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
 
   bool _uploaded(String key) => _doc(key)?['uploaded'] == true;
 
-  String? _viewUrl(String key) => _doc(key)?['view_url'];
+  /// ✅ WORKS FOR BOTH IMAGE & PDF
+  String? _viewUrl(String key) {
+    final doc = _doc(key);
+    if (doc == null) return null;
+    return doc['view_url'] ?? doc['download_url'];
+  }
 
   bool _isImageDoc(String key) => _doc(key)?['file_type'] == 'image';
 
-  /* ================= IMAGE VIEWER ================= */
+  /* ================= IMAGE PREVIEW ================= */
 
   void _previewImage(String url) {
     showDialog(
@@ -81,9 +84,7 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                   fit: BoxFit.contain,
                   loadingBuilder: (_, child, progress) {
                     if (progress == null) return child;
-                    return const CircularProgressIndicator(
-                      color: Colors.white,
-                    );
+                    return const CircularProgressIndicator(color: Colors.white);
                   },
                   errorBuilder: (_, __, ___) => const Icon(
                     Icons.broken_image,
@@ -107,27 +108,39 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
     );
   }
 
-  /* ================= PDF HANDLING ================= */
+  /* ================= PDF DOWNLOAD & VIEW ================= */
 
   Future<File> _downloadPdf(String url) async {
     final dir = await getTemporaryDirectory();
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}.pdf';
-    final path = '${dir.path}/$fileName';
+    final filePath =
+        '${dir.path}/doc_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-    final res = await Dio().get(
+    final response = await Dio().get(
       url,
-      options: Options(responseType: ResponseType.bytes),
+      options: Options(
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+      ),
     );
 
-    final file = File(path);
-    await file.writeAsBytes(res.data);
+    final bytes = response.data;
+    if (bytes == null ||
+        bytes.length < 4 ||
+        bytes[0] != 0x25 ||
+        bytes[1] != 0x50 ||
+        bytes[2] != 0x44 ||
+        bytes[3] != 0x46) {
+      throw Exception('Invalid PDF');
+    }
+
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
     return file;
   }
 
   Future<void> _openPdf(String url, String title) async {
     try {
       final file = await _downloadPdf(url);
-
       if (!mounted) return;
 
       Navigator.push(
@@ -140,11 +153,9 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
         ),
       );
     } catch (_) {
-      _snack('Unable to open document');
+      _snack('Unable to open PDF');
     }
   }
-
-  /* ================= UI HELPERS ================= */
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -164,10 +175,7 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
       ),
       child: Row(
         children: [
-          Expanded(
-            flex: 4,
-            child: Text(title, overflow: TextOverflow.ellipsis),
-          ),
+          Expanded(flex: 4, child: Text(title)),
           Expanded(
             flex: 3,
             child: Row(
@@ -181,7 +189,6 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                 Expanded(
                   child: Text(
                     uploaded ? 'Uploaded' : 'Not Uploaded',
-                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12),
                   ),
                 ),
@@ -203,10 +210,8 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                       },
                       child: const Text('View'),
                     )
-                  : const Text(
-                      'No File',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
+                  : const Text('No File',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
             ),
           ),
         ],
@@ -236,35 +241,6 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                   _docRow('Birth Certificate', 'birth'),
                   _docRow('Income Certificate', 'income'),
                   _docRow('Community Certificate', 'community'),
-                  if (otherDocuments.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Other Documents',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const Divider(),
-                    for (final doc in otherDocuments)
-                      ListTile(
-                        title: Text(doc['document_name'] ?? 'Document'),
-                        trailing: TextButton(
-                          onPressed: () {
-                            final url = doc['view_url'];
-                            if (url == null) return;
-
-                            if (doc['file_type'] == 'image') {
-                              _previewImage(url);
-                            } else {
-                              _openPdf(
-                                url,
-                                doc['document_name'] ?? 'Document',
-                              );
-                            }
-                          },
-                          child: const Text('View'),
-                        ),
-                      ),
-                  ],
                 ],
               ),
             ),
