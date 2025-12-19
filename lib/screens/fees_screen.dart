@@ -4,7 +4,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import '../services/fees_service.dart';
-
 class FeesScreen extends StatefulWidget {
   const FeesScreen({super.key});
 
@@ -152,7 +151,6 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-
             _bankRow("Account Holder", b['account_holder_name']),
             _bankRow("Account No", b['account_no'], copyable: true),
             _bankRow("Branch", b['branch_name']),
@@ -280,27 +278,25 @@ class _FeesScreenState extends State<FeesScreen> with TickerProviderStateMixin {
         title: Text(t.feesDetailsTitle),
         actions: [
           Padding(
-  padding: const EdgeInsets.only(right: 8),
-  child: ElevatedButton.icon(
-    onPressed: _showBankDetails,
-    icon: const Icon(Icons.account_balance, size: 18),
-    label: const Text(
-      "A/C DETAILS",
-      style: TextStyle(fontSize: 12),
-    ),
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.teal,
-      foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      elevation: 0,
-    ),
-  ),
-),
-
-
+            padding: const EdgeInsets.only(right: 8),
+            child: ElevatedButton.icon(
+              onPressed: _showBankDetails,
+              icon: const Icon(Icons.account_balance, size: 18),
+              label: Text(
+                t.acdetails,
+                style: const TextStyle(fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,

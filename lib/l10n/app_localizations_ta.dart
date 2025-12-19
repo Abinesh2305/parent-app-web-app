@@ -459,7 +459,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get smsTitle => 'SMS தொடர்புகள்';
 
   @override
-  String get documents => 'ஆவணங்கள்';
+  String get documents => 'ஆவணங்களைப் பதிவேற்றவும்';
 
   @override
   String get chooseFile => 'கோப்பைத் தேர்ந்தெடுக்கவும்';
@@ -484,4 +484,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get downloaddocuments => 'downloaddocuments';
+
+  @override
+  String get acdetails => 'வங்கி விவரங்கள்';
 }

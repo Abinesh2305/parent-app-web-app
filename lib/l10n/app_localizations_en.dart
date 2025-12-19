@@ -459,7 +459,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smsTitle => 'SMS Communications';
 
   @override
-  String get documents => 'Documents';
+  String get documents => 'Upload Documents';
 
   @override
   String get chooseFile => 'Choose File';
@@ -484,4 +484,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloaddocuments => 'downloaddocuments';
+
+  @override
+  String get acdetails => 'A/C DETAILS';
 }

@@ -258,7 +258,7 @@ class MenuScreen extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 softWrap: false,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 ),
               ),

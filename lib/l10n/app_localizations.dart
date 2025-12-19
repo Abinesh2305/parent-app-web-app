@@ -998,7 +998,7 @@ abstract class AppLocalizations {
   /// No description provided for @documents.
   ///
   /// In en, this message translates to:
-  /// **'Documents'**
+  /// **'Upload Documents'**
   String get documents;
 
   /// No description provided for @chooseFile.
@@ -1048,6 +1048,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'downloaddocuments'**
   String get downloaddocuments;
+
+  /// No description provided for @acdetails.
+  ///
+  /// In en, this message translates to:
+  /// **'A/C DETAILS'**
+  String get acdetails;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

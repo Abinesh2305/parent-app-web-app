@@ -188,7 +188,8 @@
 "uploadFailed": "Upload failed",
 "documentType": "Document Type",
 "otherDocument": "Other Document Name",
-"downloaddocuments": "downloaddocuments"
+"downloaddocuments": "downloaddocuments",
+"acdetails":"A/C DETAILS"
 
-  
+
 }
