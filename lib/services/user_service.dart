@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:hive/hive.dart';
 import 'dio_client.dart';
+import 'package:flutter/foundation.dart';
+
 
 class UserService {
   Future<List<dynamic>> getMobileScholars() async {
@@ -9,9 +11,7 @@ class UserService {
       final user = box.get('user');
       final token = box.get('token');
 
-      if (user == null || token == null) {
-        return [];
-      }
+      if (user == null || token == null) return [];
 
       final response = await DioClient.dio.post(
         'getmobilescholars',
@@ -20,16 +20,17 @@ class UserService {
           "api_token": token,
         },
         options: Options(headers: {
-          "x-api-key": token, // Required in API
+          "x-api-key": token,
         }),
       );
 
-      if (response.data["status"] == 1) {
-        return response.data["data"]; // List of students
+      if (response.data['status'] == 1) {
+        return response.data['data'] as List<dynamic>;
       }
+
       return [];
     } catch (e) {
-      print("Error fetching scholars: $e");
+      debugPrint("❌ getMobileScholars error: $e");
       return [];
     }
   }

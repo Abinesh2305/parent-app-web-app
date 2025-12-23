@@ -487,4 +487,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acdetails => 'A/C DETAILS';
+
+  @override
+  String get uploadAudio => 'uploadAudio';
 }

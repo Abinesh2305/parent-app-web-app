@@ -1,24 +1,25 @@
 import 'package:dio/dio.dart';
 import 'package:hive/hive.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'dio_client.dart';
 
 class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final String schoolId = dotenv.env['SCHOOL_ID'] ?? "";
-      final String fcmToken =
-          await FirebaseMessaging.instance.getToken() ?? "";
+
+      // 🔹 Firebase removed → Web-safe token
+      const String fcmToken = "WEB";
 
       final Response response = await DioClient.dio.post(
         'login',
         data: {
           'email': email,
           'password': password,
-          'fcm_token': fcmToken,
-          'device_id': 'device_001',
-          'device_type': 'ANDROID',
+          'fcm_token': fcmToken, // keep key for backend compatibility
+          'device_id': 'web_device',
+          'device_type': 'WEB',
           'school_id': schoolId,
         },
       );
@@ -42,34 +43,8 @@ class AuthService {
         box.put("language", user["language"] ?? "en");
         box.put("token", user["api_token"]);
 
-        // 🔹 SAFE topic values (NULL-SAFE)
-        final String className = (user["userdetails"]?["is_class_name"] ?? "")
-            .toString()
-            .replaceAll(" ", "_");
-
-        final String section = (user["userdetails"]?["is_section_name"] ?? "")
-            .toString()
-            .replaceAll(" ", "_");
-
-        // 🔹 Firebase topic subscriptions
-        await FirebaseMessaging.instance
-            .subscribeToTopic("School_Scholars_$schoolId");
-
-        await FirebaseMessaging.instance
-            .subscribeToTopic("Scholar_${user["id"]}");
-
-        if (className.isNotEmpty && section.isNotEmpty) {
-          await FirebaseMessaging.instance
-              .subscribeToTopic("Section_${className}_$section");
-        }
-
-        final groups = user["groups"] ?? [];
-        for (final g in groups) {
-          final gid = g["id"];
-          if (gid != null) {
-            await FirebaseMessaging.instance.subscribeToTopic("Group_$gid");
-          }
-        }
+        // 🔹 Firebase topic subscriptions REMOVED
+        // Backend should handle notifications by user_id instead
 
         return {"success": true, "user": user};
       }

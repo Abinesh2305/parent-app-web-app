@@ -1,11 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/document_service.dart';
 import 'download_document_screen.dart';
@@ -18,14 +15,16 @@ class UploadDocumentScreen extends StatefulWidget {
 }
 
 class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
-  File? _file;
+  // 🔥 FILE DATA
+  Uint8List? _fileBytes; // WEB
+  File? _file;           // MOBILE
+  String? _fileName;
+
   String? _documentType;
   String? _otherDocumentName;
 
   bool _uploading = false;
   double _progress = 0;
-
-  final ImagePicker _picker = ImagePicker();
 
   final List<Map<String, String>> _docTypes = const [
     {'label': 'Aadhaar Certificate', 'value': 'aadhar_certificate'},
@@ -35,149 +34,68 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     {'label': 'Other', 'value': 'other'},
   ];
 
-  /* ================= IMAGE HELPERS ================= */
-
-  bool _isImage(File file) {
-    final p = file.path.toLowerCase();
-    return p.endsWith('.jpg') || p.endsWith('.jpeg') || p.endsWith('.png');
-  }
-
-  Future<File?> _cropImage(File file) async {
-    final cropped = await ImageCropper().cropImage(
-      sourcePath: file.path,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Document',
-          toolbarColor: Colors.teal,
-          toolbarWidgetColor: Colors.white,
-          lockAspectRatio: false,
-        ),
-        IOSUiSettings(title: 'Crop Document'),
-      ],
-    );
-    return cropped == null ? null : File(cropped.path);
-  }
-
-  Future<File> _compressImage(File file) async {
-    final dir = await getTemporaryDirectory();
-    int quality = 70;
-    File out = file;
-
-    for (int i = 0; i < 6; i++) {
-      final target =
-          '${dir.path}/doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final result = await FlutterImageCompress.compressAndGetFile(
-        out.path,
-        target,
-        quality: quality,
-        minWidth: 1280,
-        minHeight: 1280,
-        format: CompressFormat.jpeg,
-      );
-
-      if (result == null) break;
-
-      out = File(result.path);
-      if (out.lengthSync() / 1024 <= 500) break;
-
-      quality -= 10;
-      if (quality < 30) break;
-    }
-
-    return out;
-  }
-
-  /* ================= FILE PICK ================= */
+  /* ================= PICK FILE (WEB + MOBILE) ================= */
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
+      withData: kIsWeb, // 🔥 REQUIRED FOR WEB
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
     );
 
-    if (result == null || result.files.single.path == null) return;
+    if (result == null) return;
 
-    File file = File(result.files.single.path!);
+    final file = result.files.single;
 
-    if (_isImage(file)) {
-      final cropped = await _cropImage(file);
-      if (cropped == null) return;
-      file = await _compressImage(cropped);
-    }
+    setState(() {
+      _fileName = file.name;
 
-    setState(() => _file = file);
-  }
-
-  /* ================= CAMERA ================= */
-
-  Future<void> _openCamera() async {
-    final photo = await _picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1280,
-      maxHeight: 1280,
-    );
-
-    if (photo == null) return;
-
-    File file = File(photo.path);
-
-    final cropped = await _cropImage(file);
-    if (cropped == null) return;
-
-    final compressed = await _compressImage(cropped);
-    setState(() => _file = compressed);
+      if (kIsWeb) {
+        _fileBytes = file.bytes;
+        _file = null;
+      } else {
+        _file = File(file.path!);
+        _fileBytes = null;
+      }
+    });
   }
 
   /* ================= UPLOAD ================= */
 
   Future<void> _upload() async {
-    if (_file == null || _documentType == null) {
-      _snack('Please select document type and file');
+    if (_documentType == null ||
+        (_file == null && _fileBytes == null)) {
+      _snack('Select document type and file');
       return;
     }
 
     final user = Hive.box('settings').get('user');
     if (user == null) {
-      _snack('User data missing. Please login again.');
+      _snack('Please login again');
       return;
     }
 
-    // ✅ CONFIRMED FROM YOUR JSON
-    final int? studentId = user['userdetails']?['id'];
-    final int? classId = user['userdetails']?['class_id'];
-    final int? sectionId = user['userdetails']?['section_id'];
-
-    if (studentId == null || studentId <= 0) {
-      _snack('Student ID missing. Please re-login.');
-      return;
-    }
-
-    if (classId == null || sectionId == null) {
-      _snack('Class / Section missing');
-      return;
-    }
-
-    if (_file!.lengthSync() / 1024 > 500) {
-      _snack('File size must be below 500 KB');
-      return;
-    }
+    final int studentId = user['userdetails']['id'];
+    final int classId = user['userdetails']['class_id'];
+    final int sectionId = user['userdetails']['section_id'];
 
     setState(() {
       _uploading = true;
       _progress = 0;
     });
 
-    final result = await DocumentService.uploadDocument(
+    final res = await DocumentService.uploadDocument(
       studentId: studentId,
       classId: classId,
       sectionId: sectionId,
       documentType: _documentType!,
-      otherDocumentName: _otherDocumentName,
-      file: _file!,
-      onProgress: (v) {
-        if (!mounted) return;
-        setState(() => _progress = v);
+      otherDocumentName:
+          _documentType == 'other' ? _otherDocumentName : null,
+      file: _file,              // MOBILE
+      fileBytes: _fileBytes,    // WEB
+      fileName: _fileName,
+      onProgress: (p) {
+        if (mounted) setState(() => _progress = p);
       },
     );
 
@@ -185,17 +103,17 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
 
     setState(() => _uploading = false);
 
-    if (result['success'] == true) {
-      _snack(result['message'] ?? 'Success');
-
-      // reset after success OR already uploaded
+    if (res['success'] == true) {
+      _snack(res['message'] ?? 'Upload successful');
       setState(() {
         _file = null;
+        _fileBytes = null;
+        _fileName = null;
         _documentType = null;
         _otherDocumentName = null;
       });
     } else {
-      _snack(result['message'] ?? 'Upload failed');
+      _snack(res['message'] ?? 'Upload failed');
     }
   }
 
@@ -247,17 +165,9 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _openCamera,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Camera'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
                     onPressed: _pickFile,
                     icon: const Icon(Icons.attach_file),
-                    label: const Text('File'),
+                    label: const Text('Choose File'),
                   ),
                 ),
               ],
@@ -265,7 +175,6 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
 
             const SizedBox(height: 12),
 
-            /// 👇 VIEW DOCUMENTS BUTTON (CENTER)
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -282,21 +191,16 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
               ),
             ),
 
-            if (_file != null) ...[
+            if (_fileName != null) ...[
               const SizedBox(height: 12),
-              Text('Selected: ${p.basename(_file!.path)}'),
+              Text('Selected: $_fileName'),
               const SizedBox(height: 8),
-              _isImage(_file!)
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _file!,
-                        height: 160,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : const Icon(Icons.picture_as_pdf, size: 80),
+              if (_fileName!.toLowerCase().endsWith('.pdf'))
+                const Icon(Icons.picture_as_pdf, size: 80)
+              else if (kIsWeb && _fileBytes != null)
+                Image.memory(_fileBytes!, height: 160, fit: BoxFit.cover)
+              else if (_file != null)
+                Image.file(_file!, height: 160, fit: BoxFit.cover),
             ],
 
             const SizedBox(height: 20),

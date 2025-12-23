@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
-import '../main.dart';
+
+import '../navigation/navigation_scope.dart';
+
 import '../screens/profile_screen.dart';
 import '../screens/exam_screen.dart';
 import '../screens/leave_screen.dart';
@@ -11,7 +13,7 @@ import '../screens/rewards_screen.dart';
 import '../screens/contacts_screen.dart';
 import '../screens/placeholder_screen.dart';
 import '../screens/sms/sms_communications_screen.dart';
-import 'upload_document_screen.dart';
+import '../screens/upload_document_screen.dart';
 import '../screens/download_document_screen.dart';
 
 class MenuScreen extends StatelessWidget {
@@ -72,7 +74,11 @@ class MenuScreen extends StatelessWidget {
         'label': t.upload,
         'action': 'upload_documents'
       },
-      //{'icon': Icons.download, 'label': t.downloaddocuments, 'action': 'download_documents'},
+      // {
+      //   'icon': Icons.download,
+      //   'label': t.downloaddocuments,
+      //   'action': 'download_documents'
+      // },
     ];
 
     return Scaffold(
@@ -93,8 +99,8 @@ class MenuScreen extends StatelessWidget {
               icon: item['icon'],
               label: item['label'],
               colorScheme: cs,
-              isTamil: isTamil,
-              onTap: () => _handleMenuAction(context, item['action']),
+              onTap: () =>
+                  _handleMenuAction(context, item['action'] as String),
             );
           },
         ),
@@ -105,6 +111,8 @@ class MenuScreen extends StatelessWidget {
   /* ================= MENU ACTION HANDLER ================= */
 
   void _handleMenuAction(BuildContext context, String action) {
+    final nav = NavigationScope.of(context);
+
     switch (action) {
       case 'profile':
         Navigator.push(
@@ -116,113 +124,100 @@ class MenuScreen extends StatelessWidget {
         break;
 
       case 'notifications':
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => MainNavigationScreen(
-              onToggleTheme: () {},
-              onToggleLanguage: () {},
-              openNotificationTab: true,
-            ),
-          ),
-          (_) => false,
-        );
+        nav?.goToTab(2);
+        Navigator.pop(context);
+        break;
+
+      case 'homework':
+        nav?.goToTab(1);
+        Navigator.pop(context);
+        break;
+
+      case 'fees':
+        nav?.goToTab(5);
+        Navigator.pop(context);
+        break;
+
+      case 'attendance':
+        nav?.goToTab(4);
+        Navigator.pop(context);
         break;
 
       case 'leave':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const LeaveScreen()));
+          context,
+          MaterialPageRoute(builder: (_) => const LeaveScreen()),
+        );
         break;
 
       case 'exams':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const ExamScreen()));
-        break;
-
-      case 'fees':
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => MainNavigationScreen(
-              onToggleTheme: () {},
-              onToggleLanguage: () {},
-              openFeesTab: true,
-            ),
-          ),
-          (_) => false,
-        );
-        break;
-
-      case 'homework':
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => MainNavigationScreen(
-              onToggleTheme: () {},
-              onToggleLanguage: () {},
-              openHomeworkTab: true,
-            ),
-          ),
-          (_) => false,
-        );
-        break;
-
-      case 'attendance':
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => MainNavigationScreen(
-              onToggleTheme: () {},
-              onToggleLanguage: () {},
-              openAttendanceTab: true,
-            ),
-          ),
-          (_) => false,
+          context,
+          MaterialPageRoute(builder: (_) => const ExamScreen()),
         );
         break;
 
       case 'survey':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const SurveyScreen()));
+          context,
+          MaterialPageRoute(builder: (_) => const SurveyScreen()),
+        );
         break;
 
       case 'gallery':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const GalleryScreen()));
+          context,
+          MaterialPageRoute(builder: (_) => const GalleryScreen()),
+        );
         break;
 
       case 'rewards':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const RewardsScreen()));
+          context,
+          MaterialPageRoute(builder: (_) => const RewardsScreen()),
+        );
         break;
 
       case 'events':
         Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (_) => const PlaceholderScreen(title: 'Events')),
+            builder: (_) => const PlaceholderScreen(title: 'Events'),
+          ),
         );
         break;
 
       case 'contacts':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const ContactsScreen()));
+          context,
+          MaterialPageRoute(builder: (_) => const ContactsScreen()),
+        );
         break;
 
       case 'sms':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const SmsCommunicationsScreen()),
+          MaterialPageRoute(
+            builder: (_) => const SmsCommunicationsScreen(),
+          ),
         );
         break;
 
       case 'upload_documents':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const UploadDocumentScreen()),
+          MaterialPageRoute(
+            builder: (_) => const UploadDocumentScreen(),
+          ),
         );
         break;
 
       case 'download_documents':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const DownloadDocumentScreen()),
+          MaterialPageRoute(
+            builder: (_) => const DownloadDocumentScreen(),
+          ),
         );
         break;
     }
@@ -234,7 +229,6 @@ class MenuScreen extends StatelessWidget {
     required IconData icon,
     required String label,
     required ColorScheme colorScheme,
-    required bool isTamil,
     required VoidCallback onTap,
   }) {
     return Card(
@@ -255,12 +249,9 @@ class MenuScreen extends StatelessWidget {
                 maxLines: 2,
                 minFontSize: 10,
                 maxFontSize: 12,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                ),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
             ],
           ),

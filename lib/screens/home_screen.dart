@@ -169,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Text(
                                       name,
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                         color: colorScheme.onSurface,
                                       ),

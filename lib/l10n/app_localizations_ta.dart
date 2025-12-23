@@ -487,4 +487,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get acdetails => 'வங்கி விவரங்கள்';
+
+  @override
+  String get uploadAudio => 'uploadAudio';
 }

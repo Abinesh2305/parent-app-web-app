@@ -1054,6 +1054,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A/C DETAILS'**
   String get acdetails;
+
+  /// No description provided for @uploadAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'uploadAudio'**
+  String get uploadAudio;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

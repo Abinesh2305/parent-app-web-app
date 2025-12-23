@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/leave_service.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
@@ -17,18 +16,17 @@ class LeaveScreen extends StatefulWidget {
 class _LeaveScreenState extends State<LeaveScreen> {
   final _formKey = GlobalKey<FormState>();
   final _reasonController = TextEditingController();
-  final _audioRecorder = AudioRecorder();
-  final _audioPlayer = AudioPlayer();
 
-  String _leaveType = 'FULL DAY'; // unchanged
+  String _leaveType = 'FULL DAY';
   DateTime _fromDate = DateTime.now();
   DateTime _toDate = DateTime.now();
 
-  String? _audioPath;
-  bool _recording = false;
-  bool _playing = false;
+  // ---------- AUDIO (UPLOAD ONLY) ----------
+  String? _audioPath;          // mobile
+  Uint8List? _audioBytes;      // web
+  String? _audioFileName;
+
   bool _loading = false;
-  double _currentAmplitude = 0.0;
 
   List<dynamic> _pendingLeaves = [];
   late Box settingsBox;
@@ -43,19 +41,15 @@ class _LeaveScreenState extends State<LeaveScreen> {
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) _loadUnapprovedLeaves();
     });
-
-    _audioPlayer.onPlayerComplete.listen((_) {
-      setState(() => _playing = false);
-    });
   }
 
   @override
   void dispose() {
     _reasonController.dispose();
-    _audioRecorder.dispose();
-    _audioPlayer.dispose();
     super.dispose();
   }
+
+  // ================= LOAD LEAVES =================
 
   Future<void> _loadUnapprovedLeaves() async {
     setState(() => _loading = true);
@@ -70,14 +64,45 @@ class _LeaveScreenState extends State<LeaveScreen> {
     }
 
     final res = await LeaveService().getUnapprovedLeaves();
+
     if (res != null && res['status'] == 1) {
-      setState(() => _pendingLeaves = res['data']);
+      _pendingLeaves = res['data'];
     } else {
-      setState(() => _pendingLeaves = []);
+      _pendingLeaves = [];
     }
 
     setState(() => _loading = false);
   }
+
+  // ================= PICK AUDIO =================
+
+  Future<void> _pickAudioFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mp3', 'wav', 'm4a', 'aac'],
+      withData: true, // required for web
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      final file = result.files.single;
+
+      setState(() {
+        _audioFileName = file.name;
+        _audioBytes = file.bytes; // web
+        _audioPath = file.path;   // mobile (can be null on web)
+      });
+    }
+  }
+
+  void _removeAudio() {
+    setState(() {
+      _audioFileName = null;
+      _audioBytes = null;
+      _audioPath = null;
+    });
+  }
+
+  // ================= APPLY LEAVE =================
 
   Future<void> _applyLeave() async {
     final t = AppLocalizations.of(context)!;
@@ -95,21 +120,28 @@ class _LeaveScreenState extends State<LeaveScreen> {
       leaveDate: leaveStart,
       leaveType: _leaveType,
       leaveEndDate: leaveEnd,
-      attachmentPath: _audioPath,
+      audioPath: _audioPath,
+      audioBytes: _audioBytes,
+      audioFileName: _audioFileName,
     );
 
     setState(() => _loading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res?['message'] ?? t.somethingWentWrong)));
+      SnackBar(content: Text(res?['message'] ?? t.somethingWentWrong)),
+    );
 
     if (res?['status'] == 1) {
       _reasonController.clear();
       _audioPath = null;
+      _audioBytes = null;
+      _audioFileName = null;
       _leaveType = 'FULL DAY';
       _loadUnapprovedLeaves();
     }
   }
+
+  // ================= CANCEL LEAVE =================
 
   Future<void> _cancelLeave(int id) async {
     final t = AppLocalizations.of(context)!;
@@ -119,66 +151,13 @@ class _LeaveScreenState extends State<LeaveScreen> {
     setState(() => _loading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res?['message'] ?? t.errorCancellingLeave)));
+      SnackBar(content: Text(res?['message'] ?? t.errorCancellingLeave)),
+    );
 
     if (res?['status'] == 1) _loadUnapprovedLeaves();
   }
 
-  Future<void> _toggleRecording() async {
-    final t = AppLocalizations.of(context)!;
-
-    if (_recording) {
-      final path = await _audioRecorder.stop();
-      setState(() {
-        _recording = false;
-        _audioPath = path;
-        _currentAmplitude = 0.0;
-      });
-    } else {
-      if (await _audioRecorder.hasPermission()) {
-        final dir = await getTemporaryDirectory();
-        final filePath =
-            '${dir.path}/leave_${DateTime.now().millisecondsSinceEpoch}.mp3';
-
-        await _audioRecorder.start(const RecordConfig(), path: filePath);
-
-        _audioRecorder
-            .onAmplitudeChanged(const Duration(milliseconds: 150))
-            .listen((amp) {
-          setState(() => _currentAmplitude = amp.current);
-        });
-
-        setState(() {
-          _recording = true;
-          _currentAmplitude = 0.0;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.microphonePermissionDenied)));
-      }
-    }
-  }
-
-  Future<void> _togglePlayback() async {
-    if (_audioPath == null) return;
-
-    if (_playing) {
-      await _audioPlayer.pause();
-      setState(() => _playing = false);
-    } else {
-      await _audioPlayer.play(DeviceFileSource(_audioPath!));
-      setState(() => _playing = true);
-    }
-  }
-
-  Future<void> _removeAudio() async {
-    if (_playing) await _audioPlayer.stop();
-
-    setState(() {
-      _audioPath = null;
-      _playing = false;
-    });
-  }
+  // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
@@ -199,9 +178,13 @@ class _LeaveScreenState extends State<LeaveScreen> {
                   children: [
                     _buildApplyForm(colorScheme, t),
                     const SizedBox(height: 24),
-                    Text(t.pendingLeaves,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(
+                      t.pendingLeaves,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     if (_pendingLeaves.isEmpty)
                       Center(child: Text(t.noPendingLeaves)),
@@ -232,6 +215,8 @@ class _LeaveScreenState extends State<LeaveScreen> {
     );
   }
 
+  // ================= APPLY FORM =================
+
   Widget _buildApplyForm(ColorScheme colorScheme, AppLocalizations t) {
     return Form(
       key: _formKey,
@@ -243,14 +228,19 @@ class _LeaveScreenState extends State<LeaveScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(t.applyForLeave,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(
+                t.applyForLeave,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
               const SizedBox(height: 16),
+
               DropdownButtonFormField<String>(
                 value: _leaveType,
                 decoration: InputDecoration(labelText: t.leaveType),
-                items: [
+                items: const [
                   'FULL DAY',
                   'HALF MORNING',
                   'HALF AFTERNOON',
@@ -260,102 +250,57 @@ class _LeaveScreenState extends State<LeaveScreen> {
                     .toList(),
                 onChanged: (v) => setState(() => _leaveType = v ?? 'FULL DAY'),
               ),
+
               const SizedBox(height: 12),
+
               if (_leaveType == 'MORE THAN ONE DAY') ...[
-                Row(
-                  children: [
-                    Text("${t.from}: "),
-                    TextButton(
-                      onPressed: () => _pickDate(isFrom: true),
-                      child: Text(
-                        DateFormat('dd MMM yyyy').format(_fromDate),
-                        style: TextStyle(color: colorScheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text("${t.to}: "),
-                    TextButton(
-                      onPressed: () => _pickDate(isFrom: false),
-                      child: Text(
-                        DateFormat('dd MMM yyyy').format(_toDate),
-                        style: TextStyle(color: colorScheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                Row(
-                  children: [
-                    Text("${t.date}: "),
-                    TextButton(
-                      onPressed: () => _pickDate(isFrom: true),
-                      child: Text(
-                        DateFormat('dd MMM yyyy').format(_fromDate),
-                        style: TextStyle(color: colorScheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                _dateRow(t.from, _fromDate, true, colorScheme),
+                _dateRow(t.to, _toDate, false, colorScheme),
+              ] else
+                _dateRow(t.date, _fromDate, true, colorScheme),
+
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _reasonController,
                 decoration: InputDecoration(labelText: t.reason),
                 validator: (v) => v == null || v.isEmpty ? t.enterReason : null,
               ),
+
               const SizedBox(height: 16),
+
               Row(
                 children: [
                   ElevatedButton.icon(
-                    onPressed: _toggleRecording,
-                    icon: Icon(_recording ? Icons.stop : Icons.mic),
-                    label: Text(_recording ? t.stopRecording : t.recordAudio),
+                    onPressed: _pickAudioFile,
+                    icon: const Icon(Icons.upload_file),
+                    label: Text(t.uploadAudio),
                   ),
                   const SizedBox(width: 10),
-                  if (_audioPath != null)
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            _playing ? Icons.pause_circle : Icons.play_circle,
-                            size: 32,
-                            color: colorScheme.primary,
+                  if (_audioFileName != null)
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.audiotrack, size: 18),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _audioFileName!,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          onPressed: _togglePlayback,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.red),
-                          onPressed: _removeAudio,
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: _removeAudio,
+                          ),
+                        ],
+                      ),
                     ),
                 ],
               ),
-              if (_recording) ...[
-                const SizedBox(height: 16),
-                Center(
-                  child: Column(
-                    children: [
-                      Text(t.recordingSpeakNow),
-                      const SizedBox(height: 8),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 100),
-                        height: 20,
-                        width: (_currentAmplitude.abs() * 2).clamp(10, 300),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+
               const SizedBox(height: 20),
+
               ElevatedButton.icon(
                 onPressed: _applyLeave,
                 icon: const Icon(Icons.send),
@@ -365,6 +310,26 @@ class _LeaveScreenState extends State<LeaveScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _dateRow(
+    String label,
+    DateTime date,
+    bool isFrom,
+    ColorScheme scheme,
+  ) {
+    return Row(
+      children: [
+        Text("$label: "),
+        TextButton(
+          onPressed: () => _pickDate(isFrom: isFrom),
+          child: Text(
+            DateFormat('dd MMM yyyy').format(date),
+            style: TextStyle(color: scheme.primary),
+          ),
+        ),
+      ],
     );
   }
 

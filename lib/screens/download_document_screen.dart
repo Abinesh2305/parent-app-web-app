@@ -1,8 +1,11 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../services/document_service.dart';
 import 'pdf_viewer_screen.dart';
@@ -11,14 +14,16 @@ class DownloadDocumentScreen extends StatefulWidget {
   const DownloadDocumentScreen({super.key});
 
   @override
-  State<DownloadDocumentScreen> createState() => _DownloadDocumentScreenState();
+  State<DownloadDocumentScreen> createState() =>
+      _DownloadDocumentScreenState();
 }
 
-class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
+class _DownloadDocumentScreenState
+    extends State<DownloadDocumentScreen> {
   bool loading = true;
 
-  Map<String, dynamic>? documentsStatus;
-  List<dynamic> otherDocuments = [];
+  Map<String, dynamic> documentsStatus = {};
+  List<Map<String, dynamic>> otherDocuments = [];
 
   @override
   void initState() {
@@ -31,41 +36,52 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
   Future<void> _loadDocuments() async {
     setState(() => loading = true);
 
-    final user = Hive.box('settings').get('user');
+    final rawUser = Hive.box('settings').get('user');
+    final user =
+        rawUser is Map ? Map<String, dynamic>.from(rawUser) : null;
+
     if (user == null || user['id'] == null) {
       setState(() => loading = false);
       return;
     }
 
-    final res = await DocumentService.getMyDocumentStatus(
-      userId: user['id'],
-    );
+    final res =
+        await DocumentService.getMyDocumentStatus(userId: user['id']);
 
-    if (res['success'] == true && mounted) {
+    if (!mounted) return;
+
+    if (res['success'] == true) {
+      final data = res['data'] ?? {};
+
       setState(() {
-        documentsStatus =
-            Map<String, dynamic>.from(res['data']['documents_status'] ?? {});
-        otherDocuments = List.from(res['data']['other_documents'] ?? []);
+        documentsStatus = data['documents_status'] is Map
+            ? Map<String, dynamic>.from(data['documents_status'])
+            : {};
+
+        otherDocuments = (data['other_documents'] is List)
+            ? (data['other_documents'] as List)
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList()
+            : [];
       });
     }
 
-    if (mounted) setState(() => loading = false);
+    setState(() => loading = false);
   }
 
   /* ================= HELPERS ================= */
 
-  Map<String, dynamic>? _doc(String key) => documentsStatus?[key];
+  Map<String, dynamic>? _doc(String key) => documentsStatus[key];
 
   bool _uploaded(String key) => _doc(key)?['uploaded'] == true;
 
-  /// ✅ WORKS FOR BOTH IMAGE & PDF
   String? _viewUrl(String key) {
     final doc = _doc(key);
     if (doc == null) return null;
     return doc['view_url'] ?? doc['download_url'];
   }
 
-  bool _isImageDoc(String key) => _doc(key)?['file_type'] == 'image';
+  bool _isImage(String key) => _doc(key)?['file_type'] == 'image';
 
   /* ================= IMAGE PREVIEW ================= */
 
@@ -84,7 +100,8 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                   fit: BoxFit.contain,
                   loadingBuilder: (_, child, progress) {
                     if (progress == null) return child;
-                    return const CircularProgressIndicator(color: Colors.white);
+                    return const CircularProgressIndicator(
+                        color: Colors.white);
                   },
                   errorBuilder: (_, __, ___) => const Icon(
                     Icons.broken_image,
@@ -98,56 +115,56 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
               top: 30,
               right: 20,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                icon: const Icon(Icons.close,
+                    color: Colors.white, size: 28),
                 onPressed: () => Navigator.pop(context),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  /* ================= PDF DOWNLOAD & VIEW ================= */
-
-  Future<File> _downloadPdf(String url) async {
-    final dir = await getTemporaryDirectory();
-    final filePath =
-        '${dir.path}/doc_${DateTime.now().millisecondsSinceEpoch}.pdf';
-
-    final response = await Dio().get(
-      url,
-      options: Options(
-        responseType: ResponseType.bytes,
-        followRedirects: true,
-      ),
-    );
-
-    final bytes = response.data;
-    if (bytes == null ||
-        bytes.length < 4 ||
-        bytes[0] != 0x25 ||
-        bytes[1] != 0x50 ||
-        bytes[2] != 0x44 ||
-        bytes[3] != 0x46) {
-      throw Exception('Invalid PDF');
-    }
-
-    final file = File(filePath);
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
-  }
+  /* ================= PDF OPEN ================= */
 
   Future<void> _openPdf(String url, String title) async {
+    // 🌐 WEB → open in new tab
+    if (kIsWeb) {
+      final uri = Uri.parse(url);
+      if (!await launchUrl(uri,
+          mode: LaunchMode.externalApplication)) {
+        _snack('Unable to open PDF');
+      }
+      return;
+    }
+
+    // 📱 MOBILE → download & open inside app
     try {
-      final file = await _downloadPdf(url);
+      final response = await Dio().get(
+        url,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes = response.data;
+      if (bytes == null || bytes.length < 4) {
+        throw Exception('Invalid PDF');
+      }
+
+      final dir = await getTemporaryDirectory();
+      final filePath =
+          '${dir.path}/doc_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      final file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
       if (!mounted) return;
 
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => PdfViewerScreen(
-            file: file,
+            file: file, // ✅ FIXED
             title: title,
           ),
         ),
@@ -158,16 +175,49 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  /* ================= TABLE ROW ================= */
+  /* ================= ROWS ================= */
 
   Widget _docRow(String title, String key) {
     final uploaded = _uploaded(key);
     final url = _viewUrl(key);
-    final isImage = _isImageDoc(key);
+    final isImage = _isImage(key);
 
+    return _row(
+      title: title,
+      uploaded: uploaded,
+      onView: uploaded && url != null
+          ? () => isImage
+              ? _previewImage(url)
+              : _openPdf(url, title)
+          : null,
+    );
+  }
+
+  Widget _otherDocRow(Map<String, dynamic> doc) {
+    final title = doc['name'] ?? 'Other Document';
+    final url = doc['view_url'] ?? doc['download_url'];
+    final type = doc['file_type'] ?? 'pdf';
+
+    return _row(
+      title: title,
+      uploaded: url != null,
+      onView: url == null
+          ? null
+          : () => type == 'image'
+              ? _previewImage(url)
+              : _openPdf(url, title),
+    );
+  }
+
+  Widget _row({
+    required String title,
+    required bool uploaded,
+    VoidCallback? onView,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: const BoxDecoration(
@@ -175,7 +225,7 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
       ),
       child: Row(
         children: [
-          Expanded(flex: 4, child: Text(title)),
+          Expanded(flex: 5, child: Text(title)),
           Expanded(
             flex: 3,
             child: Row(
@@ -186,11 +236,9 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                   size: 16,
                 ),
                 const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    uploaded ? 'Uploaded' : 'Not Uploaded',
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                Text(
+                  uploaded ? 'Uploaded' : 'Not Uploaded',
+                  style: const TextStyle(fontSize: 12),
                 ),
               ],
             ),
@@ -199,19 +247,16 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
             flex: 2,
             child: Align(
               alignment: Alignment.centerRight,
-              child: uploaded && url != null
+              child: onView != null
                   ? TextButton(
-                      onPressed: () {
-                        if (isImage) {
-                          _previewImage(url);
-                        } else {
-                          _openPdf(url, title);
-                        }
-                      },
+                      onPressed: onView,
                       child: const Text('View'),
                     )
-                  : const Text('No File',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  : const Text(
+                      'No File',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
             ),
           ),
         ],
@@ -234,13 +279,26 @@ class _DownloadDocumentScreenState extends State<DownloadDocumentScreen> {
                 children: [
                   const Text(
                     'Document Status',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const Divider(),
+
                   _docRow('Aadhaar Certificate', 'aadhar'),
                   _docRow('Birth Certificate', 'birth'),
                   _docRow('Income Certificate', 'income'),
                   _docRow('Community Certificate', 'community'),
+
+                  if (otherDocuments.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Other Documents',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const Divider(),
+                    ...otherDocuments.map(_otherDocRow),
+                  ],
                 ],
               ),
             ),

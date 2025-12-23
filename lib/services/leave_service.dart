@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'dio_client.dart';
 
@@ -10,14 +12,20 @@ class LeaveService {
     required String leaveDate,
     required String leaveType,
     String? leaveEndDate,
-    String? attachmentPath,
+
+    // 🔽 NEW (optional, safe)
+    String? audioPath,            // mobile
+    Uint8List? audioBytes,        // web
+    String? audioFileName,        // both
   }) async {
     try {
       final box = Hive.box('settings');
       final user = box.get('user');
       final token = box.get('token');
 
-      if (user == null || token == null) throw Exception("User not logged in");
+      if (user == null || token == null) {
+        throw Exception("User not logged in");
+      }
 
       final formData = FormData.fromMap({
         'user_id': user['id'],
@@ -26,22 +34,38 @@ class LeaveService {
         'leave_date': leaveDate,
         'leave_type': leaveType,
         if (leaveEndDate != null) 'leave_end_date': leaveEndDate,
-        if (attachmentPath != null)
-          'leave_attachment': await MultipartFile.fromFile(attachmentPath),
+
+        // ================= AUDIO =================
+        if (audioBytes != null && audioFileName != null)
+          'leave_attachment': MultipartFile.fromBytes(
+            audioBytes,
+            filename: audioFileName,
+          )
+        else if (audioPath != null)
+          'leave_attachment': await MultipartFile.fromFile(
+            audioPath,
+            filename: audioPath.split('/').last,
+          ),
       });
 
       final res = await _dio.post(
         'apply_leave',
         data: formData,
-        options: Options(headers: {'x-api-key': token}),
+        options: Options(
+          headers: {'x-api-key': token},
+          contentType: 'multipart/form-data',
+        ),
       );
 
       return res.data;
-    } catch (e) {
-      print("⚠️ applyLeave error: $e");
+    } catch (e, s) {
+      debugPrint("⚠️ applyLeave error: $e");
+      debugPrintStack(stackTrace: s);
       return null;
     }
   }
+
+  // ================= APPLIED LEAVES =================
 
   Future<Map<String, dynamic>?> getAppliedLeaves({int type = 1}) async {
     try {
@@ -62,12 +86,15 @@ class LeaveService {
         },
         options: Options(headers: {'x-api-key': token}),
       );
+
       return res.data;
     } catch (e) {
-      print("⚠️ getAppliedLeaves error: $e");
+      debugPrint("⚠️ getAppliedLeaves error: $e");
       return null;
     }
   }
+
+  // ================= UNAPPROVED LEAVES =================
 
   Future<Map<String, dynamic>?> getUnapprovedLeaves() async {
     try {
@@ -83,12 +110,15 @@ class LeaveService {
         },
         options: Options(headers: {'x-api-key': token}),
       );
+
       return res.data;
     } catch (e) {
-      print("⚠️ getUnapprovedLeaves error: $e");
+      debugPrint("⚠️ getUnapprovedLeaves error: $e");
       return null;
     }
   }
+
+  // ================= CANCEL LEAVE =================
 
   Future<Map<String, dynamic>?> cancelLeave(int leaveId) async {
     try {
@@ -105,9 +135,10 @@ class LeaveService {
         },
         options: Options(headers: {'x-api-key': token}),
       );
+
       return res.data;
     } catch (e) {
-      print("⚠️ cancelLeave error: $e");
+      debugPrint("⚠️ cancelLeave error: $e");
       return null;
     }
   }

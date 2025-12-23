@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'dart:io' show File;
 import 'package:dio/dio.dart';
 import 'dio_client.dart';
 
 class DocumentService {
   /* =========================================================
-   * UPLOAD DOCUMENT
+   * UPLOAD DOCUMENT (WEB + MOBILE SAFE)
    * ========================================================= */
   static Future<Map<String, dynamic>> uploadDocument({
     required int studentId,
@@ -12,10 +13,41 @@ class DocumentService {
     required int sectionId,
     required String documentType,
     String? otherDocumentName,
-    required File file,
+
+    /// 🔥 MOBILE
+    File? file,
+
+    /// 🔥 WEB
+    Uint8List? fileBytes,
+    String? fileName,
+
     required Function(double) onProgress,
   }) async {
     try {
+      if (file == null && fileBytes == null) {
+        return {
+          'success': false,
+          'message': 'No file selected',
+        };
+      }
+
+      MultipartFile multipartFile;
+
+      // ================== WEB ==================
+      if (fileBytes != null) {
+        multipartFile = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName ?? 'document',
+        );
+      }
+      // ================== MOBILE ==================
+      else {
+        multipartFile = await MultipartFile.fromFile(
+          file!.path,
+          filename: file.path.split('/').last,
+        );
+      }
+
       final formData = FormData.fromMap({
         'student_id': studentId,
         'class_id': classId,
@@ -23,10 +55,7 @@ class DocumentService {
         'document_type': documentType,
         if (documentType == 'other' && otherDocumentName != null)
           'other_document_name': otherDocumentName,
-        'document': await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.split('/').last,
-        ),
+        'document': multipartFile,
       });
 
       final Response res = await DioClient.dio.post(
@@ -39,7 +68,10 @@ class DocumentService {
       );
 
       if (res.data == null) {
-        return {'success': false, 'message': 'Empty server response'};
+        return {
+          'success': false,
+          'message': 'Empty server response',
+        };
       }
 
       if (res.data['status'] != 1) {
@@ -51,24 +83,27 @@ class DocumentService {
 
       return {
         'success': true,
-        'message': res.data['message'] ?? 'Success',
+        'message': res.data['message'] ?? 'Upload successful',
         'data': res.data['data'],
       };
     } on DioException catch (e) {
       return {
         'success': false,
         'message':
-            e.response?.data?['message'] ?? e.message ?? 'Network error',
+            e.response?.data?['message'] ??
+            e.message ??
+            'Network error',
       };
     } catch (e) {
-      return {'success': false, 'message': e.toString()};
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
     }
   }
 
   /* =========================================================
-   * ✅ GET MY DOCUMENT STATUS (FIXED)
-   * API: POST documents/my-status
-   * BODY: { user_id }
+   * GET MY DOCUMENT STATUS
    * ========================================================= */
   static Future<Map<String, dynamic>> getMyDocumentStatus({
     required int userId,
@@ -76,9 +111,7 @@ class DocumentService {
     try {
       final Response res = await DioClient.dio.post(
         'documents/my-status',
-        data: {
-          'user_id': userId, // 🔥 REQUIRED (same as Postman)
-        },
+        data: {'user_id': userId},
       );
 
       if (res.data == null) {
@@ -100,7 +133,9 @@ class DocumentService {
       return {
         'success': false,
         'message':
-            e.response?.data?['message'] ?? e.message ?? 'Network error',
+            e.response?.data?['message'] ??
+            e.message ??
+            'Network error',
       };
     } catch (e) {
       return {'success': false, 'message': e.toString()};
@@ -108,7 +143,7 @@ class DocumentService {
   }
 
   /* =========================================================
-   * (OPTIONAL) GET STUDENT DOCUMENT LIST
+   * GET STUDENT DOCUMENT LIST (OPTIONAL)
    * ========================================================= */
   static Future<Map<String, dynamic>> getStudentDocuments({
     required int studentId,
@@ -138,7 +173,9 @@ class DocumentService {
       return {
         'success': false,
         'message':
-            e.response?.data?['message'] ?? e.message ?? 'Network error',
+            e.response?.data?['message'] ??
+            e.message ??
+            'Network error',
       };
     } catch (e) {
       return {'success': false, 'message': e.toString()};
