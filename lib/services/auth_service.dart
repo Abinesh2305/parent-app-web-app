@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'dio_client.dart';
@@ -7,14 +7,16 @@ import 'dio_client.dart';
 class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final String schoolId = dotenv.env['SCHOOL_ID'] ?? "";
+      final String schoolId = dotenv.env['SCHOOL_ID'] ?? '';
 
-      const String fcmToken = "WEB";
+      //Web-safe token placeholder
+      const String fcmToken = 'WEB';
 
+      // backend endpoint
       final response = await DioClient.dio.post(
-        'login',
+        'common_user_login',
         data: {
-          'email': email,
+          'email': email.trim(),
           'password': password,
           'fcm_token': fcmToken,
           'device_id': 'web_device',
@@ -25,67 +27,73 @@ class AuthService {
 
       final data = response.data;
 
-      // ✅ VERY IMPORTANT CHECK
+      // ================= SAFETY CHECK =================
       if (data is! Map<String, dynamic>) {
         return {
-          "success": false,
-          "message": "Invalid server response"
+          'success': false,
+          'message': 'Invalid server response',
         };
       }
 
+      // ================= LOGIN SUCCESS =================
       if (data['status'] == 1) {
         final user = data['data'];
 
-        if (user is! Map) {
+        if (user is! Map<String, dynamic>) {
           return {
-            "success": false,
-            "message": "Invalid user data"
+            'success': false,
+            'message': 'Invalid user data',
           };
         }
 
-        // 🔹 First install → force password change
+        // 🔹 Force password change (first login)
         if (user['is_app_installed'] == 0) {
           return {
-            "success": true,
-            "forcePasswordChange": true,
-            "userId": user['id'],
-            "apiToken": user['api_token'],
+            'success': true,
+            'forcePasswordChange': true,
+            'userId': user['id'],
+            'apiToken': user['api_token'],
           };
         }
 
         // 🔹 Save to Hive
         final box = Hive.box('settings');
-        box.put("user", user);
-        box.put("language", user["language"] ?? "en");
-        box.put("token", user["api_token"]);
+        await box.put('user', user);
+        await box.put('language', user['language'] ?? 'en');
+        await box.put('token', user['api_token']);
 
         return {
-          "success": true,
-          "user": user
+          'success': true,
+          'user': user,
         };
       }
 
-      // ❌ Login failed (status != 1)
+      // ================= LOGIN FAILED =================
       return {
-        "success": false,
-        "message": data['message'] ?? "Invalid email or password"
+        'success': false,
+        'message': data['message']?.toString() ??
+            'Invalid email or password',
       };
-    } on DioException catch (e) {
-      // ✅ SAFE Dio error handling
+    }
+
+    // ================= DIO ERROR =================
+    on DioException catch (e) {
       final errData = e.response?.data;
 
       return {
-        "success": false,
-        "message": errData is Map
-            ? errData['message'] ?? "API error"
-            : "Server not reachable"
+        'success': false,
+        'message': errData is Map<String, dynamic>
+            ? errData['message']?.toString() ?? 'API error'
+            : 'Server not reachable',
       };
-    } catch (e) {
+    }
+
+    // ================= UNKNOWN ERROR =================
+    catch (_) {
       return {
-        "success": false,
-        "message": "Unexpected error occurred"
+        'success': false,
+        'message': 'Unexpected error occurred',
       };
     }
   }
 }
-
