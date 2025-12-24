@@ -23,7 +23,6 @@
     }
   },
 
-  
   "hosting": {
     "public": "build/web",
     "ignore": [
@@ -32,6 +31,10 @@
       "**/node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/api/**",
+        "destination": "https://www.clasteqsms.com/multischool/api/**"
+      },
       {
         "source": "**",
         "destination": "/index.html"
