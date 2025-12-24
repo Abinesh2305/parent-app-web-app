@@ -9,31 +9,47 @@ class AuthService {
     try {
       final String schoolId = dotenv.env['SCHOOL_ID'] ?? "";
 
-      // 🔹 Firebase removed → Web-safe token
       const String fcmToken = "WEB";
 
-      final Response response = await DioClient.dio.post(
+      final response = await DioClient.dio.post(
         'login',
         data: {
           'email': email,
           'password': password,
-          'fcm_token': fcmToken, // keep key for backend compatibility
+          'fcm_token': fcmToken,
           'device_id': 'web_device',
           'device_type': 'WEB',
           'school_id': schoolId,
         },
       );
 
-      if (response.data["status"] == 1) {
-        final user = response.data["data"];
+      final data = response.data;
+
+      // ✅ VERY IMPORTANT CHECK
+      if (data is! Map<String, dynamic>) {
+        return {
+          "success": false,
+          "message": "Invalid server response"
+        };
+      }
+
+      if (data['status'] == 1) {
+        final user = data['data'];
+
+        if (user is! Map) {
+          return {
+            "success": false,
+            "message": "Invalid user data"
+          };
+        }
 
         // 🔹 First install → force password change
-        if (user["is_app_installed"] == 0) {
+        if (user['is_app_installed'] == 0) {
           return {
             "success": true,
             "forcePasswordChange": true,
-            "userId": user["id"],
-            "apiToken": user["api_token"],
+            "userId": user['id'],
+            "apiToken": user['api_token'],
           };
         }
 
@@ -43,28 +59,33 @@ class AuthService {
         box.put("language", user["language"] ?? "en");
         box.put("token", user["api_token"]);
 
-        // 🔹 Firebase topic subscriptions REMOVED
-        // Backend should handle notifications by user_id instead
-
-        return {"success": true, "user": user};
-      }
-
-      return {
-        "success": false,
-        "message": response.data["message"] ?? "Login failed"
-      };
-    } catch (e, stack) {
-      print("❌ Login Error: $e");
-      print(stack);
-
-      if (e is DioException) {
         return {
-          "success": false,
-          "message": e.response?.data["message"] ?? "API error",
+          "success": true,
+          "user": user
         };
       }
 
-      return {"success": false, "message": e.toString()};
+      // ❌ Login failed (status != 1)
+      return {
+        "success": false,
+        "message": data['message'] ?? "Invalid email or password"
+      };
+    } on DioException catch (e) {
+      // ✅ SAFE Dio error handling
+      final errData = e.response?.data;
+
+      return {
+        "success": false,
+        "message": errData is Map
+            ? errData['message'] ?? "API error"
+            : "Server not reachable"
+      };
+    } catch (e) {
+      return {
+        "success": false,
+        "message": "Unexpected error occurred"
+      };
     }
   }
 }
+

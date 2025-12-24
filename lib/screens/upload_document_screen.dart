@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
