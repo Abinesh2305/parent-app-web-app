@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     // 🔹 Login failed (SAFE)
-    final message = response is Map && response.containsKey('message')
+    final message = response.containsKey('message')
         ? response['message'].toString()
         : t.loginFailed;
 

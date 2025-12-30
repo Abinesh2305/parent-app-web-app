@@ -1,12 +1,10 @@
-import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
 import 'package:school_dashboard/services/homework_service.dart';
 import '../widgets/image_preview.dart';
@@ -21,182 +19,107 @@ class HomeworkScreen extends StatefulWidget {
 class _HomeworkScreenState extends State<HomeworkScreen> {
   final HomeworkService _service = HomeworkService();
 
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = DateTime.now(); // ✅ FIXED (not final)
   bool _loading = false;
-  List<dynamic> _homeworks = [];
+  List<Map<String, dynamic>> _homeworks = [];
   late Box settingsBox;
-  Timer? _syncTimer;
+  late StreamSubscription _studentSub; // ✅ prevent dispose crash
 
   @override
   void initState() {
     super.initState();
     settingsBox = Hive.box('settings');
-    _ensurePendingBoxOpen().then((_) {
-      _loadHomeworks();
-      // start hourly sync after ensuring pending box is open
-      _startHourlySync();
-    });
+    _loadHomeworks();
 
-    settingsBox.watch(key: 'user').listen((_) {
+    // ✅ LISTEN TO STUDENT SWITCH SAFELY
+    _studentSub = settingsBox.watch(key: 'current_student').listen((_) {
       if (mounted) _loadHomeworks();
-    });
-  }
-
-  Future<void> _ensurePendingBoxOpen() async {
-    if (!Hive.isBoxOpen('pending_reads_homework')) {
-      try {
-        await Hive.openBox('pending_reads_homework');
-      } catch (e) {
-        debugPrint("Failed to open pending_reads_homework box: $e");
-      }
-    }
-  }
-
-  void _startHourlySync() {
-    // Cancel existing timer if any
-    _syncTimer?.cancel();
-    // Sync pending reads every 60 minutes
-    _syncTimer = Timer.periodic(const Duration(minutes: 60), (_) {
-      _syncPendingHomeworkReads();
     });
   }
 
   @override
   void dispose() {
-    _syncTimer?.cancel();
+    _studentSub.cancel(); // ✅ CRITICAL FIX
     super.dispose();
   }
 
-  Future<void> _loadHomeworks() async {
-  if (!mounted) return;
+  /* ================= DATE PICKER ================= */
 
-  setState(() => _loading = true);
-
-  try {
-    final data = await _service.getHomeworks(date: _selectedDate);
-    if (!mounted) return;
-
-    // Normalize read_status casing and immediately save locally for UNREAD items
-    for (final hw in data) {
-      final readStatus =
-          (hw["read_status"] ?? "UNREAD").toString().toUpperCase();
-      hw["read_status"] = readStatus;
-
-      if (readStatus == "UNREAD") {
-        // Save locally (do not call server now)
-        _saveReadLocally(
-          hw["main_ref_no"]?.toString() ??
-              hw["id"]?.toString() ??
-              "",
-        );
-
-        // Update UI immediately
-        hw["read_status"] = "READ";
-      }
-    }
-
-    setState(() => _homeworks = data);
-  }
-
-  on SocketException {
-    _showNetworkMessage();
-  }
-  on TimeoutException {
-    _showNetworkMessage();
-  }
-  catch (e) {
-    // Hide technical error from user
-    debugPrint("[Homework] Load error: $e");
-    _showNetworkMessage();
-  }
-  finally {
-    if (mounted) setState(() => _loading = false);
-  }
-}
-
-
-  void _saveReadLocally(String ref) {
-    if (ref.isEmpty) return;
-    try {
-      final box = Hive.box('pending_reads_homework');
-      // Use ISO8601 timestamp for clarity
-      box.put(ref, DateTime.now().toIso8601String());
-      debugPrint("[Homework] Saved pending read locally: $ref");
-    } catch (e) {
-      debugPrint("[Homework] Failed saving pending read locally: $e");
-    }
-  }
-
-  Future<void> _syncPendingHomeworkReads() async {
-  try {
-    final box = Hive.box('pending_reads_homework');
-    if (box.isEmpty) return;
-
-    final pending = Map<String, dynamic>.from(box.toMap());
-    final homeworkIds = pending.keys.toList();
-
-    debugPrint("[Homework] Syncing ${homeworkIds.length} items...");
-
-    final ok = await _service.batchMarkAsRead(homeworkIds);
-
-    if (ok) {
-      await box.clear();
-      await _loadHomeworks();
-      debugPrint("[Homework] Sync success (batch)");
-    } else {
-      _showNetworkMessage();
-      debugPrint("[Homework] Sync failed (API returned false)");
-    }
-  }
-  // 🌐 Network / timeout / socket issues
-  on SocketException {
-    _showNetworkMessage();
-  }
-  on TimeoutException {
-    _showNetworkMessage();
-  }
-  catch (e) {
-    
-    _showNetworkMessage();
-    debugPrint("[Homework] Sync error (hidden): $e");
-  }
-}
-void _showNetworkMessage() {
-  if (!mounted) return;
-
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Your internet is slow or unavailable. Please try again later.',
-        ),
-        duration: Duration(seconds: 3),
-      ),
-    );
-}
-
-  Future<void> _openDatePicker() async {
+  Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
+      lastDate: DateTime.now(), // no future homework
     );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-      _loadHomeworks();
+    if (picked == null || !mounted) return;
+
+    setState(() => _selectedDate = picked);
+    _loadHomeworks();
+  }
+
+  /* ================= LOAD HOMEWORK ================= */
+
+  Future<void> _loadHomeworks() async {
+    if (!mounted) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final data = await _service.getHomeworks(date: _selectedDate);
+
+      if (!mounted) return;
+
+      final safe = <Map<String, dynamic>>[];
+
+      for (final item in data) {
+        if (item is Map<String, dynamic>) {
+          safe.add(item);
+        }
+      }
+
+      setState(() => _homeworks = safe);
+    } catch (e) {
+      if (mounted) _showNetworkMessage();
+      debugPrint("[Homework] Load error: $e");
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _changeDate(bool next) {
-    setState(() {
-      _selectedDate = next
-          ? _selectedDate.add(const Duration(days: 1))
-          : _selectedDate.subtract(const Duration(days: 1));
-    });
-    _loadHomeworks();
+  /* ================= ACKNOWLEDGE ================= */
+
+  Future<void> _acknowledgeNow() async {
+    try {
+      for (final hw in _homeworks) {
+        if (hw['ack_required'] == 1 &&
+            hw['ack_status'] != 'ACKNOWLEDGED') {
+          await _service.acknowledge(hw['main_ref_no']);
+        }
+      }
+
+      await _loadHomeworks();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Acknowledged successfully")),
+      );
+    } catch (_) {
+      _showNetworkMessage();
+    }
+  }
+
+  /* ================= HELPERS ================= */
+
+  void _showNetworkMessage() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content:
+            Text("Your internet is slow or unavailable. Please try again."),
+      ),
+    );
   }
 
   bool _isImage(String url) {
@@ -204,117 +127,77 @@ void _showNetworkMessage() {
     return u.endsWith('.jpg') ||
         u.endsWith('.jpeg') ||
         u.endsWith('.png') ||
-        u.endsWith('.gif') ||
         u.endsWith('.webp');
   }
 
-  List<String> _collectAllAttachments() {
-    final seen = <String>{};
-    final result = <String>[];
+  List<String> _collectAttachments() {
+    final files = <String>{};
 
     for (final hw in _homeworks) {
-      final attachments = (hw['attachments'] as List?) ?? [];
-      for (final a in attachments) {
-        if (a is String && a.isNotEmpty && seen.add(a)) {
-          result.add(a);
+      final raw = hw['attachments'];
+      if (raw is List) {
+        for (final f in raw) {
+          if (f is String && f.isNotEmpty) files.add(f);
         }
       }
     }
-    return result;
+    return files.toList();
   }
 
-  /// ✅ FIXED DOWNLOAD METHOD (NULL SAFE)
-  Future<void> _downloadFile(BuildContext context, String url) async {
-    try {
-      Directory? dir;
+  /* ================= DOWNLOAD ================= */
 
-      if (Platform.isAndroid) {
-        dir = await getExternalStorageDirectory();
-      } else {
-        dir = await getApplicationDocumentsDirectory();
+  Future<void> _downloadFile(String url) async {
+    if (kIsWeb) {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
-
-      if (dir == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Storage not available")),
-        );
-        return;
-      }
-
-      final fileName = url.split('/').last;
-      final filePath = "${dir.path}/$fileName";
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Downloading $fileName")),
-      );
-
-      await Dio().download(url, filePath);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Saved in: ${dir.path}")),
-      );
-
-      await OpenFilex.open(filePath);
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "504 Your internet connection is slow, please try again",
-          ),
-        ),
-      ); 
+      return;
     }
+
+    try {
+      await Dio().get(url);
+    } catch (_) {}
   }
+
+  /* ================= UI ================= */
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final date = DateFormat('dd MMM, yyyy').format(_selectedDate);
+    final attachments = _collectAttachments();
 
-    final formattedDate =
-        DateFormat('dd MMM, yyyy').format(_selectedDate);
-
-    final allAttachments = _collectAllAttachments();
-
-    final bool anyRequiresAck =
-        _homeworks.any((h) => h["ack_required"] == 1);
-
-    final bool allAckDone = _homeworks.isNotEmpty &&
+    final anyAck =
+        _homeworks.any((h) => h['ack_required'] == 1);
+    final allAckDone = anyAck &&
         _homeworks
-            .where((h) => h["ack_required"] == 1)
-            .every((h) => h["ack_status"] == "ACKNOWLEDGED");
+            .where((h) => h['ack_required'] == 1)
+            .every((h) => h['ack_status'] == 'ACKNOWLEDGED');
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            GestureDetector(
-              onTap: _openDatePicker,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: () => _changeDate(false),
-                  ),
-                  Icon(Icons.calendar_today,
-                      color: colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: () => _changeDate(true),
-                  ),
-                ],
-              ),
+            // ✅ DATE HEADER WITH CALENDAR
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  date,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: _loading ? null : _pickDate,
+                )
+              ],
             ),
+
             const SizedBox(height: 16),
+
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -322,153 +205,95 @@ void _showNetworkMessage() {
                       ? Center(child: Text(t.noHomework))
                       : SingleChildScrollView(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Card(
-                                elevation: 3,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              Table(
+                                border: TableBorder.all(
+                                  color: Colors.grey.shade300,
                                 ),
-                                child: Table(
-                                  border: TableBorder.all(
-                                      color: Colors.grey.shade300),
-                                  columnWidths: const {
-                                    0: FlexColumnWidth(1),
-                                    1: FlexColumnWidth(2),
-                                  },
-                                  children: [
-                                    TableRow(
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary
-                                            .withOpacity(0.1),
-                                      ),
-                                      children: [
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.all(8),
-                                          child: Text(
-                                            t.subject,
-                                            style: const TextStyle(
-                                                fontWeight:
-                                                    FontWeight.bold),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.all(8),
-                                          child: Text(
-                                            t.description,
-                                            style: const TextStyle(
-                                                fontWeight:
-                                                    FontWeight.bold),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ..._homeworks.map(
-                                      (hw) => TableRow(
-                                        children: [
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.all(8),
-                                            child:
-                                                Text(hw['subject'] ?? ''),
-                                          ),
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.all(8),
-                                            child: Text(
-                                                hw['description'] ?? ''),
-                                          ),
-                                        ],
+                                columnWidths: const {
+                                  0: FlexColumnWidth(1),
+                                  1: FlexColumnWidth(2),
+                                },
+                                children: [
+                                  TableRow(children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Text(
+                                        t.subject,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Text(
+                                        t.description,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ]),
+                                  ..._homeworks.map((hw) {
+                                    return TableRow(children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Text(
+                                            hw['subject']?.toString() ?? ''),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Text(
+                                            hw['description']?.toString() ??
+                                                ''),
+                                      ),
+                                    ]);
+                                  }),
+                                ],
                               ),
+
                               const SizedBox(height: 16),
 
-                              if (anyRequiresAck)
+                              if (anyAck)
                                 allAckDone
                                     ? const Text(
                                         "Acknowledged",
                                         style: TextStyle(
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.bold),
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       )
                                     : ElevatedButton(
-                                        onPressed: () async {
-                                          for (final hw in _homeworks) {
-                                            if (hw["ack_required"] == 1) {
-                                              await _service.acknowledge(
-                                                  hw["main_ref_no"]);
-                                            }
-                                          }
-                                          _loadHomeworks();
-                                        },
-                                        child:
-                                            const Text("Acknowledge"),
+                                        onPressed: _acknowledgeNow,
+                                        child: const Text("Acknowledge"),
                                       ),
 
-                              if (allAttachments.isNotEmpty) ...[
+                              if (attachments.isNotEmpty) ...[
                                 const SizedBox(height: 16),
-                                Text(
-                                  t.attachments,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
-                                  runSpacing: 8,
-                                  children: allAttachments.map((file) {
-                                    final isImage = _isImage(file);
-                                    final fileName =
-                                        file.split('/').last;
-
+                                  children: attachments.map((f) {
+                                    final isImg = _isImage(f);
                                     return InkWell(
-                                      onTap: () {
-                                        if (isImage) {
-                                          ImagePreview.show(
-                                              context, file);
-                                        } else {
-                                          _downloadFile(context, file);
-                                        }
-                                      },
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          isImage
-                                              ? Image.network(
-                                                  file,
-                                                  width: 80,
-                                                  height: 80,
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : const Icon(
-                                                  Icons.insert_drive_file,
-                                                  size: 48,
-                                                ),
-                                          const SizedBox(height: 4),
-                                          SizedBox(
-                                            width: 80,
-                                            child: Text(
-                                              fileName,
-                                              overflow:
-                                                  TextOverflow.ellipsis,
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.blue,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                      onTap: () => isImg
+                                          ? ImagePreview.show(context, f)
+                                          : _downloadFile(f),
+                                      child: isImg
+                                          ? Image.network(
+                                              f,
+                                              width: 80,
+                                              height: 80,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (_, __, ___) =>
+                                                      const Icon(
+                                                          Icons.broken_image),
+                                            )
+                                          : const Icon(
+                                              Icons.insert_drive_file),
                                     );
                                   }).toList(),
-                                ),
-                              ],
+                                )
+                              ]
                             ],
                           ),
                         ),

@@ -1,19 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/" />
 
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
   <meta name="description" content="School parent application for attendance, homework and fees">
 
-  <!-- ✅ PWA REQUIRED META -->
+  <!-- PWA -->
   <meta name="theme-color" content="#0175C2">
-
-  <!-- ✅ Android PWA -->
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- ✅ iOS PWA -->
+  <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="CPL Demo School">
@@ -29,16 +27,28 @@
 </head>
 
 <body>
-  <!-- Flutter bootstrap -->
+
+  <!-- PWA Install Handler -->
+  <script>
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('PWA install ready');
+      window.dispatchEvent(new Event('pwa-install-ready'));
+    });
+
+    window.showPwaInstall = async function () {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+    };
+  </script>
+
+  <!-- Flutter -->
   <script src="flutter_bootstrap.js" async></script>
 
-  <!-- ✅ SERVICE WORKER (REQUIRED FOR INSTALL) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('flutter_service_worker.js');
-      });
-    }
-  </script>
 </body>
 </html>

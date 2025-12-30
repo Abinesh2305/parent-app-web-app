@@ -43,7 +43,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     settingsBox = Hive.box('settings');
     await _loadAttendance();
 
-    settingsBox.watch(key: 'user').listen((_) async {
+    /// ✅ LISTEN TO STUDENT SWITCH
+    settingsBox.watch(key: 'current_student').listen((_) async {
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) _loadAttendance();
     });
@@ -67,12 +68,18 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final user = settingsBox.get('user');
+      /// ✅ USE CURRENT STUDENT
+      final student = settingsBox.get('current_student');
       final token = settingsBox.get('token');
-      if (user == null || token == null) {
+
+      if (student == null || token == null) {
         setState(() => _isLoading = false);
         return;
       }
+
+      debugPrint(
+        "🎯 Attendance → ${student['name']} (${student['id']})",
+      );
 
       final monthYear =
           "${_focusedDay.year}-${_focusedDay.month.toString().padLeft(2, '0')}";
@@ -141,7 +148,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final cs = Theme.of(context).colorScheme;
 
     if (_isLoading) {
       return const Scaffold(
@@ -227,8 +233,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             _item(t.present, presentDays),
             _item(t.absent, absentDays),
             _item(
-                t.attendancePercentage,
-                "${attendancePercentage.toStringAsFixed(1)}%"),
+              t.attendancePercentage,
+              "${attendancePercentage.toStringAsFixed(1)}%",
+            ),
           ],
         ),
       ),
@@ -261,9 +268,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(status!,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              status!,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             if (desc != null) ...[
               const SizedBox(height: 8),
               Text(desc),

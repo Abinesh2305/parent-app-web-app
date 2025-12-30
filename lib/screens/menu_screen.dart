@@ -29,56 +29,19 @@ class MenuScreen extends StatelessWidget {
 
     final List<Map<String, dynamic>> menuItems = [
       {'icon': Icons.person_outline, 'label': t.profile, 'action': 'profile'},
-      {
-        'icon': Icons.notifications_none,
-        'label': t.notifications,
-        'action': 'notifications'
-      },
-      {
-        'icon': Icons.calendar_today_outlined,
-        'label': t.applyForLeave,
-        'action': 'leave'
-      },
+      {'icon': Icons.notifications_none, 'label': t.notifications, 'action': 'notifications'},
+      {'icon': Icons.calendar_today_outlined, 'label': t.applyForLeave, 'action': 'leave'},
       {'icon': Icons.fact_check_outlined, 'label': t.exams, 'action': 'exams'},
       {'icon': Icons.currency_rupee, 'label': t.fees, 'action': 'fees'},
       {'icon': Icons.book_outlined, 'label': t.homework, 'action': 'homework'},
       {'icon': Icons.sms_outlined, 'label': t.sms, 'action': 'sms'},
-      {
-        'icon': Icons.calendar_month,
-        'label': t.attendance,
-        'action': 'attendance'
-      },
+      {'icon': Icons.calendar_month, 'label': t.attendance, 'action': 'attendance'},
       {'icon': Icons.poll_outlined, 'label': t.survey, 'action': 'survey'},
-      {
-        'icon': Icons.photo_library_outlined,
-        'label': t.gallery,
-        'action': 'gallery'
-      },
-      {
-        'icon': Icons.workspace_premium_outlined,
-        'label': t.rewarsRemarkmenu,
-        'action': 'rewards'
-      },
-      {
-        'icon': Icons.event_note_outlined,
-        'label': t.events,
-        'action': 'events'
-      },
-      {
-        'icon': Icons.contact_phone_outlined,
-        'label': t.schoolContacts,
-        'action': 'contacts'
-      },
-      {
-        'icon': Icons.upload_file,
-        'label': t.upload,
-        'action': 'upload_documents'
-      },
-      // {
-      //   'icon': Icons.download,
-      //   'label': t.downloaddocuments,
-      //   'action': 'download_documents'
-      // },
+      {'icon': Icons.photo_library_outlined, 'label': t.gallery, 'action': 'gallery'},
+      {'icon': Icons.workspace_premium_outlined, 'label': t.rewarsRemarkmenu, 'action': 'rewards'},
+      {'icon': Icons.event_note_outlined, 'label': t.events, 'action': 'events'},
+      {'icon': Icons.contact_phone_outlined, 'label': t.schoolContacts, 'action': 'contacts'},
+      {'icon': Icons.upload_file, 'label': t.upload, 'action': 'upload_documents'},
     ];
 
     return Scaffold(
@@ -99,8 +62,7 @@ class MenuScreen extends StatelessWidget {
               icon: item['icon'],
               label: item['label'],
               colorScheme: cs,
-              onTap: () =>
-                  _handleMenuAction(context, item['action'] as String),
+              onTap: () => _handleMenuAction(context, item['action']),
             );
           },
         ),
@@ -114,111 +76,81 @@ class MenuScreen extends StatelessWidget {
     final nav = NavigationScope.of(context);
 
     switch (action) {
+      // ---------- FULL SCREENS ----------
       case 'profile':
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ProfileScreen(onLogout: onLogout),
-          ),
+          MaterialPageRoute(builder: (_) => ProfileScreen(onLogout: onLogout)),
         );
-        break;
-
-      case 'notifications':
-        nav?.goToTab(2);
-        Navigator.pop(context);
-        break;
-
-      case 'homework':
-        nav?.goToTab(1);
-        Navigator.pop(context);
-        break;
-
-      case 'fees':
-        nav?.goToTab(5);
-        Navigator.pop(context);
-        break;
-
-      case 'attendance':
-        nav?.goToTab(4);
-        Navigator.pop(context);
         break;
 
       case 'leave':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LeaveScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaveScreen()));
         break;
 
       case 'exams':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ExamScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExamScreen()));
         break;
 
       case 'survey':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SurveyScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyScreen()));
         break;
 
       case 'gallery':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const GalleryScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const GalleryScreen()));
         break;
 
       case 'rewards':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const RewardsScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen()));
         break;
 
       case 'events':
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const PlaceholderScreen(title: 'Events'),
-          ),
+          MaterialPageRoute(builder: (_) => const PlaceholderScreen(title: 'Events')),
         );
         break;
 
       case 'contacts':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ContactsScreen()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactsScreen()));
         break;
 
       case 'sms':
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const SmsCommunicationsScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const SmsCommunicationsScreen()),
         );
         break;
 
       case 'upload_documents':
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const UploadDocumentScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const UploadDocumentScreen()),
         );
         break;
 
       case 'download_documents':
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const DownloadDocumentScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const DownloadDocumentScreen()),
         );
+        break;
+
+      // ---------- TAB NAVIGATION (NO POP!) ----------
+      case 'notifications':
+        nav?.goToTab(2);
+        break;
+
+      case 'homework':
+        nav?.goToTab(1);
+        break;
+
+      case 'fees':
+        nav?.goToTab(5);
+        break;
+
+      case 'attendance':
+        nav?.goToTab(4);
         break;
     }
   }

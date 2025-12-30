@@ -22,19 +22,14 @@
       }
     }
   },
-
   "hosting": {
-    "public": "build/web",
+    "public": "y",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "/api/**",
-        "destination": "https://www.clasteqsms.com/multischool/api/**"
-      },
       {
         "source": "**",
         "destination": "/index.html"

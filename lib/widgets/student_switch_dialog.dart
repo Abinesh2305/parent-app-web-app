@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../services/home_service.dart';
+import '../services/student_manager.dart';
 
 Future<void> showStudentSwitchDialog({
   required BuildContext context,
@@ -8,49 +8,121 @@ Future<void> showStudentSwitchDialog({
   required VoidCallback goHome,
 }) async {
   final box = Hive.box('settings');
+  bool switching = false;
 
   await showDialog(
     context: context,
-    builder: (_) => AlertDialog(
-      title: const Text("Switch Student"),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: students.length,
-          itemBuilder: (_, i) {
-            final s = students[i];
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Switch Student"),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: switching
+                  ? const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: students.length,
+                      itemBuilder: (_, i) {
+                        final s =
+                            Map<String, dynamic>.from(students[i]);
 
-            return ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(s['name'] ?? 'Student'),
-              subtitle: Text(
-                "${s['class_name'] ?? ''} ${s['section_name'] ?? ''}",
-              ),
-              onTap: () async {
-                // ✅ STORE ONLY STUDENT
-                box.put('current_student', s);
+                        return ListTile(
+                          leading: const Icon(Icons.person),
+                          title: Text(
+                            s['name']?.toString() ?? 'Student',
+                          ),
+                          subtitle: Text(
+                            "${s['class_name'] ?? ''} ${s['section_name'] ?? ''}",
+                          ),
+                          onTap: () async {
+                            setState(() => switching = true);
 
-                Navigator.pop(context);
+                            // 🔐 Parent credentials (stored at login)
+                            final parentEmail =
+                                box.get('parent_email');
+                            final parentPassword =
+                                box.get('parent_password');
 
-                // 🔄 Refresh home data
-                await HomeService.syncHomeContents();
+                            if (parentEmail == null ||
+                                parentPassword == null) {
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Please login again to switch student",
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
 
-                if (!context.mounted) return;
+                            // 🔑 REQUIRED by backend
+                            final studentUsername =
+                                s['username'] ??
+                                s['student_username'] ??
+                                s['admission_no'];
 
-                // ⬅️ Go to home
-                goHome();
-              },
-            );
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("CANCEL"),
-        ),
-      ],
-    ),
+                            if (studentUsername == null ||
+                                studentUsername
+                                    .toString()
+                                    .isEmpty) {
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text("Invalid student data"),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // 🔁 RE-AUTH & SWITCH
+                            final success =
+                                await StudentManager.switchStudent(
+                              parentEmail: parentEmail,
+                              password: parentPassword,
+                              student: s,
+                              studentUsername:
+                                  studentUsername.toString(),
+                            );
+
+                            if (!success) {
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text("Unable to switch student"),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // ✅ SUCCESS
+                            Navigator.pop(dialogContext);
+                            goHome();
+                          },
+                        );
+                      },
+                    ),
+            ),
+            actions: switching
+                ? []
+                : [
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.pop(dialogContext),
+                      child: const Text("CANCEL"),
+                    ),
+                  ],
+          );
+        },
+      );
+    },
   );
 }

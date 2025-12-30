@@ -7,92 +7,107 @@ import '../screens/login_screen.dart';
 import '../main.dart';
 
 class DioClient {
+  static bool _loggingOut = false; // 🛑 prevent double logout
+
   static final Dio dio = Dio(
     BaseOptions(
-      // 🔥 IMPORTANT: default to /api/ for Firebase Hosting
-      baseUrl: dotenv.env['BASE_URL']?.isNotEmpty == true
-          ? dotenv.env['BASE_URL']!
-          : '/api/',
+      baseUrl: dotenv.env['BASE_URL']!,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 20),
       headers: const {
         'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
     ),
   )..interceptors.add(
       InterceptorsWrapper(
-        // ================= REQUEST =================
+        /* ================= REQUEST ================= */
         onRequest: (options, handler) {
-          final box = Hive.box('settings');
-          final token = box.get('token');
+          try {
+            final box = Hive.isBoxOpen('settings')
+                ? Hive.box('settings')
+                : null;
 
-          if (token != null && token.toString().isNotEmpty) {
-            options.headers['x-api-key'] = token;
+            final token = box?.get('token');
+
+            if (token != null && token.toString().isNotEmpty) {
+              options.headers['x-api-key'] = token;
+            }
+
+            debugPrint("➡️ ${options.method} ${options.uri}");
+          } catch (_) {
+            // silently ignore
           }
 
-          return handler.next(options);
+          handler.next(options);
         },
 
-        // ================= RESPONSE =================
+        /* ================= RESPONSE ================= */
         onResponse: (response, handler) {
           final data = response.data;
 
-          // ✅ SAFE: only read message if response is Map
-          if (data is Map && _isInvalidTokenMessage(data['message']?.toString())) {
-            _handleInvalidUser();
-            return;
+          if (data is Map<String, dynamic> &&
+              _isInvalidTokenMessage(data['message']?.toString())) {
+            _forceLogoutOnce();
           }
 
-          return handler.next(response);
+          // ✅ NEVER reject a valid response
+          handler.next(response);
         },
 
-        // ================= ERROR =================
+        /* ================= ERROR ================= */
         onError: (DioException e, handler) {
           final data = e.response?.data;
 
-          // ✅ SAFE: handle only Map responses
-          if (data is Map &&
+          if (data is Map<String, dynamic> &&
               _isInvalidTokenMessage(data['message']?.toString())) {
-            _handleInvalidUser();
-            return;
+            _forceLogoutOnce();
           }
 
-          return handler.next(e);
+          // ✅ pass error to caller (services already catch it)
+          handler.next(e);
         },
       ),
     );
 
-  // ================= HELPERS =================
+  /* ================= HELPERS ================= */
 
   static bool _isInvalidTokenMessage(String? msg) {
     if (msg == null) return false;
 
-    final lower = msg.toLowerCase();
-    return lower.contains('invalid user') ||
-        lower.contains('invalid token') ||
-        lower.contains('device changed') ||
-        lower.contains('unauthorized');
+    final m = msg.toLowerCase();
+    return m.contains('invalid') ||
+        m.contains('unauthorized') ||
+        m.contains('token expired') ||
+        m.contains('device changed') ||
+        m.contains('session expired');
   }
 
-  static Future<void> _handleInvalidUser() async {
-    try {
-      final box = Hive.box('settings');
-      await box.clear();
+  static Future<void> _forceLogoutOnce() async {
+    if (_loggingOut) return;
+    _loggingOut = true;
 
-      final ctx = navigatorKey.currentContext;
-      if (ctx != null) {
-        Navigator.of(ctx).pushAndRemoveUntil(
+    try {
+      if (Hive.isBoxOpen('settings')) {
+        await Hive.box('settings').clear();
+      }
+
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (_) => LoginScreen(
               onToggleTheme: () {},
               onToggleLanguage: () {},
             ),
           ),
-          (route) => false,
+          (_) => false,
         );
       }
     } catch (e) {
-      debugPrint("⚠️ Logout redirect error: $e");
+      debugPrint("⚠️ Force logout failed: $e");
+    } finally {
+      _loggingOut = false;
     }
   }
 }

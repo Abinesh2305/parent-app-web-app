@@ -1,33 +1,30 @@
 import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
+import 'package:flutter/foundation.dart';
 import 'dio_client.dart';
 
 class AuthService {
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  /* =========================================================
+   * NORMAL LOGIN (Parent / First Student)
+   * ======================================================= */
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
     try {
-      final String schoolId = dotenv.env['SCHOOL_ID'] ?? '';
-
-      //Web-safe token placeholder
-      const String fcmToken = 'WEB';
-
-      // backend endpoint
       final response = await DioClient.dio.post(
         'common_user_login',
         data: {
           'email': email.trim(),
           'password': password,
-          'fcm_token': fcmToken,
-          'device_id': 'web_device',
-          'device_type': 'WEB',
-          'school_id': schoolId,
+          'device_id': kIsWeb ? 'web_device' : 'mobile_device',
+          'device_type': kIsWeb ? 'WEB' : 'ANDROID',
+          'fcm_token': '', // web-safe
         },
       );
 
       final data = response.data;
 
-      // ================= SAFETY CHECK =================
       if (data is! Map<String, dynamic>) {
         return {
           'success': false,
@@ -35,65 +32,107 @@ class AuthService {
         };
       }
 
-      // ================= LOGIN SUCCESS =================
-      if (data['status'] == 1) {
-        final user = data['data'];
-
-        if (user is! Map<String, dynamic>) {
-          return {
-            'success': false,
-            'message': 'Invalid user data',
-          };
-        }
-
-        // 🔹 Force password change (first login)
-        if (user['is_app_installed'] == 0) {
-          return {
-            'success': true,
-            'forcePasswordChange': true,
-            'userId': user['id'],
-            'apiToken': user['api_token'],
-          };
-        }
-
-        // 🔹 Save to Hive
-        final box = Hive.box('settings');
-        await box.put('user', user);
-        await box.put('language', user['language'] ?? 'en');
-        await box.put('token', user['api_token']);
-
+      if (data['status'] != 1 || data['data'] == null) {
         return {
-          'success': true,
-          'user': user,
+          'success': false,
+          'message': data['message'] ?? 'Login failed',
         };
       }
 
-      // ================= LOGIN FAILED =================
+      final user = Map<String, dynamic>.from(data['data']);
+      final box = Hive.box('settings');
+
+      // ================= SAVE BASE DATA =================
+      await box.put('user', user);
+
+      // first student = current student
+      await box.put('current_student', user);
+
+      // token for APIs
+      await box.put('token', user['api_token']);
+
+      // language (optional)
+      await box.put('language', user['language'] ?? 'en');
+
+      // 🔑 REQUIRED FOR STUDENT SWITCH (THIS FIXES YOUR ISSUE)
+      await box.put('parent_email', email.trim());
+      await box.put('parent_password', password);
+
+      debugPrint("✅ Login success → ${user['name']}");
+
+      return {
+        'success': true,
+        'user': user,
+      };
+    } on DioException catch (e) {
       return {
         'success': false,
-        'message': data['message']?.toString() ??
-            'Invalid email or password',
+        'message':
+            e.response?.data?['message']?.toString() ??
+            'Server not reachable',
       };
-    }
-
-    // ================= DIO ERROR =================
-    on DioException catch (e) {
-      final errData = e.response?.data;
-
-      return {
-        'success': false,
-        'message': errData is Map<String, dynamic>
-            ? errData['message']?.toString() ?? 'API error'
-            : 'Server not reachable',
-      };
-    }
-
-    // ================= UNKNOWN ERROR =================
-    catch (_) {
+    } catch (e) {
       return {
         'success': false,
         'message': 'Unexpected error occurred',
       };
     }
+  }
+
+  /* =========================================================
+   * 🔁 STUDENT SWITCH RE-AUTH (CRITICAL FOR WEB)
+   * ======================================================= */
+  Future<bool> switchStudentLogin({
+    required String parentEmail,
+    required String password,
+    required String studentUsername,
+  }) async {
+    try {
+      final response = await DioClient.dio.post(
+        'common_user_login',
+        data: {
+          'email': parentEmail.trim(),
+          'password': password,
+          'student_username': studentUsername,
+          'device_id': kIsWeb ? 'web_device' : 'mobile_device',
+          'device_type': kIsWeb ? 'WEB' : 'ANDROID',
+          'fcm_token': '',
+        },
+      );
+
+      final data = response.data;
+
+      if (data is! Map<String, dynamic>) return false;
+      if (data['status'] != 1 || data['data'] == null) return false;
+
+      final student = Map<String, dynamic>.from(data['data']);
+      final box = Hive.box('settings');
+
+      // 🔁 IMPORTANT: UPDATE BOTH STUDENT + TOKEN
+      await box.put('current_student', student);
+      await box.put('token', student['api_token']);
+
+      debugPrint(
+        "🔁 Student switched → ${student['name']} (${student['id']})",
+      );
+
+      return true;
+    } on DioException catch (e) {
+      debugPrint(
+        "❌ Switch student Dio error: ${e.response?.data}",
+      );
+      return false;
+    } catch (e) {
+      debugPrint("❌ Switch student error: $e");
+      return false;
+    }
+  }
+
+  /* =========================================================
+   * LOGOUT
+   * ======================================================= */
+  Future<void> logout() async {
+    final box = Hive.box('settings');
+    await box.clear();
   }
 }

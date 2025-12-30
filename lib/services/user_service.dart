@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:hive/hive.dart';
-import 'dio_client.dart';
 import 'package:flutter/foundation.dart';
-
+import 'dio_client.dart';
 
 class UserService {
-  Future<List<dynamic>> getMobileScholars() async {
+  /// ================= GET STUDENT LIST =================
+  Future<List<Map<String, dynamic>>> getMobileScholars() async {
     try {
       final box = Hive.box('settings');
       final user = box.get('user');
@@ -17,15 +17,14 @@ class UserService {
         'getmobilescholars',
         data: {
           "user_id": user['id'],
-          "api_token": token,
         },
-        options: Options(headers: {
-          "x-api-key": token,
-        }),
+        options: Options(
+          headers: {"x-api-key": token},
+        ),
       );
 
-      if (response.data['status'] == 1) {
-        return response.data['data'] as List<dynamic>;
+      if (response.data != null && response.data['status'] == 1) {
+        return List<Map<String, dynamic>>.from(response.data['data']);
       }
 
       return [];

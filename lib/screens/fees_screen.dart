@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:school_dashboard/l10n/app_localizations.dart';
-
 import '../services/fees_service.dart';
 
 class FeesScreen extends StatefulWidget {
@@ -20,7 +19,9 @@ class _FeesScreenState extends State<FeesScreen>
   List<dynamic>? _transactions;
 
   bool _loading = true;
+  bool _feesBusy = false; // 🛑 prevents double calls
   final String _batch = DateTime.now().year.toString();
+
   late Box settingsBox;
 
   @override
@@ -36,18 +37,45 @@ class _FeesScreenState extends State<FeesScreen>
   Future<void> _init() async {
     await _loadFees();
 
-    settingsBox.watch(key: 'user').listen((_) async {
+    /// ✅ SAFE STUDENT SWITCH LISTENER
+    settingsBox.watch(key: 'current_student').listen((_) async {
       await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted) _loadFees();
+
+      if (!mounted) return;
+
+      final student = settingsBox.get('current_student');
+      final token = settingsBox.get('token');
+
+      if (student == null || token == null) {
+        debugPrint("⏸ Fees reload skipped (student/token null)");
+        return;
+      }
+
+      _loadFees();
     });
   }
 
   /* ================= LOAD FEES ================= */
 
   Future<void> _loadFees() async {
+    if (!mounted || _feesBusy) return;
+
+    final student = settingsBox.get('current_student');
+    final token = settingsBox.get('token');
+
+    if (student == null || token == null) {
+      debugPrint("⏸ Fees load skipped (student/token null)");
+      return;
+    }
+
+    _feesBusy = true;
     setState(() => _loading = true);
 
     try {
+      debugPrint(
+        "💰 Fees load → ${student['name']} (${student['id']})",
+      );
+
       final summary =
           await FeesService().getScholarFeesPayments(_batch);
       final txn =
@@ -57,11 +85,13 @@ class _FeesScreenState extends State<FeesScreen>
 
       setState(() {
         _feesSummary = summary;
-        _transactions = txn?['data'];
+        _transactions = txn?['data'] ?? [];
       });
-    } catch (_) {
-      _snack("Unable to load fees. Please check your internet.");
+    } catch (e) {
+      debugPrint("❌ Fees screen error: $e");
+      _snack("Unable to load fees. Please try again.");
     } finally {
+      _feesBusy = false;
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -81,7 +111,7 @@ class _FeesScreenState extends State<FeesScreen>
       if (!mounted) return;
       Navigator.pop(context);
 
-      if (banks.isEmpty) {
+      if (banks == null || banks.isEmpty) {
         _snack("Bank details not available");
         return;
       }
@@ -106,7 +136,7 @@ class _FeesScreenState extends State<FeesScreen>
           ],
         ),
       );
-    } catch (_) {
+    } catch (e) {
       if (mounted) Navigator.pop(context);
       _snack("Unable to load bank details");
     }
@@ -155,63 +185,43 @@ class _FeesScreenState extends State<FeesScreen>
   /* ================= QR VIEW ================= */
 
   void _viewQrImage(String url) {
-  if (url.isEmpty) {
-    _snack("QR image not available");
-    return;
-  }
+    if (url.isEmpty) {
+      _snack("QR image not available");
+      return;
+    }
 
-  debugPrint("QR URL: $url"); // helpful for debugging
-
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (_) => Dialog(
-      backgroundColor: Colors.black,
-      insetPadding: const EdgeInsets.all(16), // ✅ important for web
-      child: Stack(
-        children: [
-          Center(
-            child: InteractiveViewer(
-              child: Image.network(
-                url,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return const CircularProgressIndicator(
-                    color: Colors.white,
-                  );
-                },
-                errorBuilder: (_, __, ___) => const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.broken_image,
-                        color: Colors.white, size: 60),
-                    SizedBox(height: 8),
-                    Text(
-                      "Unable to load QR",
-                      style: TextStyle(color: Colors.white),
-                    )
-                  ],
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.broken_image,
+                          color: Colors.white, size: 60),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: IconButton(
-              icon: const Icon(Icons.close,
-                  color: Colors.white, size: 28),
-              onPressed: () => Navigator.pop(context),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon:
+                    const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   /* ================= UI HELPERS ================= */
 
@@ -252,8 +262,8 @@ class _FeesScreenState extends State<FeesScreen>
                   if (copyable)
                     const Padding(
                       padding: EdgeInsets.only(left: 6),
-                      child:
-                          Icon(Icons.copy, size: 16, color: Colors.grey),
+                      child: Icon(Icons.copy,
+                          size: 16, color: Colors.grey),
                     ),
                 ],
               ),
@@ -274,27 +284,6 @@ class _FeesScreenState extends State<FeesScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(t.feesDetailsTitle),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ElevatedButton.icon(
-              onPressed: _showBankDetails,
-              icon: const Icon(Icons.account_balance, size: 18),
-              label:
-                  Text(t.acdetails, style: const TextStyle(fontSize: 12)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-            ),
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -402,8 +391,8 @@ class _FeesScreenState extends State<FeesScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("Overall Summary",
-                style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _row("Total", "₹${total['total_amount']}"),
             _row("Paid", "₹${total['paid_amount']}"),
