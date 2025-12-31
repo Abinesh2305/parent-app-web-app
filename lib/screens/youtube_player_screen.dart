@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
-import '../helpers/youtube_utils.dart';
 
 class YouTubePlayerScreen extends StatefulWidget {
   final String videoUrl;
@@ -12,22 +11,26 @@ class YouTubePlayerScreen extends StatefulWidget {
 }
 
 class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
-  late YoutubePlayerController _controller;
+  late final YoutubePlayerController _controller;
+  late final String videoId;
 
   @override
   void initState() {
     super.initState();
 
-    final videoId = YouTubeUtils.extractId(widget.videoUrl);
+    videoId = YoutubePlayerController.convertUrlToId(widget.videoUrl) ?? "";
 
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: videoId,
-      autoPlay: true,
+    if (videoId.isEmpty) {
+      debugPrint("Invalid YouTube URL");
+      return;
+    }
+
+    _controller = YoutubePlayerController(
       params: const YoutubePlayerParams(
+        showControls: true,
         showFullscreenButton: true,
-        mute: false,
       ),
-    );
+    )..loadVideoById(videoId: videoId);
   }
 
   @override
@@ -38,11 +41,21 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (videoId.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text("Invalid video link")),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Video")),
-      body: YoutubePlayer(
-        controller: _controller,
-        aspectRatio: 16 / 9,
+      appBar: AppBar(title: const Text("YouTube Video")),
+      body: Center(
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: YoutubePlayer(
+            controller: _controller,
+          ),
+        ),
       ),
     );
   }
